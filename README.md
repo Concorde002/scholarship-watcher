@@ -177,6 +177,8 @@ npm run mail:list -- --dry-run
 npm run mail:list
 ```
 
+Set `MAIL_SUBSCRIBERS=true` in `.env` to send that digest to hosted subscribers automatically after each successful run. The owner address is skipped.
+
 ### Architecture and limits
 
 - `cloud/public` — Pages frontend
@@ -350,6 +352,7 @@ Set `"enabled": false` to keep a source documented without fetching it. `npm run
 | `CLOUD_URL` | — | Hosted Pages URL |
 | `CLOUD_ADMIN_SECRET` | — | Admin secret for `publish:cloud` and subscriber export |
 | `PUBLISH_CLOUD` | `false` | Publish after each successful run |
+| `MAIL_SUBSCRIBERS` | `false` | Send the latest digest to hosted subscribers after each run (owner skipped) |
 
 If email sending fails, the run exits non-zero and **does not advance state**, so yesterday's opportunities are retried on the next run instead of being silently lost.
 

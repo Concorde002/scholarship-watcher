@@ -394,6 +394,17 @@ async function commandRun(options) {
       logWarn(`Cloud publish failed: ${error.message}`);
     }
   }
+
+  if (/^(1|true|yes)$/i.test(process.env.MAIL_SUBSCRIBERS || '') && process.env.CLOUD_URL) {
+    try {
+      execFileSync(process.execPath, [join(paths.root, 'scripts', 'mail-subscribers.mjs')], {
+        stdio: 'inherit',
+        env: process.env,
+      });
+    } catch (error) {
+      logWarn(`Mailing-list send failed: ${error.message}`);
+    }
+  }
 }
 
 async function commandCheckSources(options) {
