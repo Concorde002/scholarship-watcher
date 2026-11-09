@@ -183,9 +183,9 @@ function renderStatus(data) {
   const stats = [
     ['open', 'Open now', counts.open],
     ['urgent', 'Today / tomorrow', counts.urgent],
-    ['week', 'Next 7 days', counts.week],
-    ['month', 'Next 30 days', counts.month],
-    ['later', '30+ days', counts.later],
+    ['week', 'Days 2–7', counts.week],
+    ['month', 'Days 8–30', counts.month],
+    ['later', '31+ days', counts.later],
     ['none', 'No deadline', counts.noDeadline],
   ];
   $('stats-grid').innerHTML = stats
@@ -235,7 +235,7 @@ function filteredItems() {
     if (state.urgency === 'month' && !(item.daysLeft !== null && item.daysLeft <= 30)) return false;
     if (state.urgency === 'none' && item.daysLeft !== null) return false;
     if (!query) return true;
-    return `${item.title} ${item.sourceName} ${item.location} ${item.category} ${item.reason}`
+    return `${item.title} ${item.sourceName} ${item.location} ${item.category} ${item.eventDate ?? ''} ${item.reason}`
       .toLowerCase()
       .includes(query);
   });

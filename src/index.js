@@ -320,6 +320,7 @@ async function commandRun(options) {
 
   if (digest.empty && !config.sendEmpty) {
     emailStatus.error = 'No matches and SEND_EMPTY is off';
+    emailStatus.sent = null;
     writeRunStatus();
     log('No new fully funded matches today and SEND_EMPTY is off. Nothing sent.');
     return;
