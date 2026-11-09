@@ -1,6 +1,6 @@
 {
   "name": "scholarship-watcher",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Local daily watcher for fully funded scholarships, fellowships and conferences. Filters out fees and self-funded programs, then emails you a deadline-aware digest. Includes RSS, Telegram and authenticated Instagram sources.",
   "type": "module",
   "license": "MIT",
@@ -18,6 +18,7 @@
     "setup": "node src/index.js setup",
     "instagram:login": "node src/index.js instagram-login",
     "instagram:status": "node src/index.js instagram-status",
+    "dashboard": "node src/dashboard.js",
     "test-email": "node src/index.js test-email",
     "check-sources": "node src/index.js check-sources",
     "schedule": "node src/index.js schedule",

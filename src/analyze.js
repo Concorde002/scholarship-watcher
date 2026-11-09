@@ -213,6 +213,169 @@ export function extractDeadline(text, now = new Date()) {
   return { date: null, label: null };
 }
 
+const EVENT_CONTEXT =
+  /(event\s+dates?|program(?:me)?\s+dates?|conference\s+dates?|summit\s+dates?|takes?\s+place|will\s+be\s+held|is\s+held|held\s+(?:in|on|from)|runs?\s+from|starts?\s+(?:on|in)|begins?\s+(?:on|in)|commences|scheduled\s+(?:for|on)|event\s*:|conference\s*:|summit\s*:)/gi;
+
+const EVENT_CLAUSE_CONTEXT =
+  /(event\s+dates?|program(?:me)?\s+dates?|conference\s+dates?|summit\s+dates?|dates?)\s*:?/i;
+
+const DEADLINE_RANGE_GUARD =
+  /(deadline|apply\s+by|(?:applications?|apply)\b[^.;]{0,30}\b(?:open|close|closes|due|accepted|window)|closing\s+date|last\s+date|due\s+date|submission\s+deadline)/i;
+
+function deadlineBefore(text, index) {
+  const before = text.slice(Math.max(0, index - 100), index);
+  const clause = before.split(/[.;]/).pop() ?? '';
+  return DEADLINE_RANGE_GUARD.test(clause);
+}
+
+const DAY = '\\d{1,2}(?:st|nd|rd|th)?';
+const YEAR = '20\\d{2}';
+
+function eventRangePatterns() {
+  const month = MONTH_PATTERN;
+  return [
+    // May 28 – June 11, 2027
+    new RegExp(
+      `\\b(?:${month})[a-z]*\\.?\\s+${DAY}(?:,?\\s*${YEAR})?\\s*,?\\s*(?:–|-|—|to|until)\\s*(?:${month})[a-z]*\\.?\\s+${DAY},?\\s*${YEAR}\\b`,
+      'i',
+    ),
+    // May 28–30, 2027
+    new RegExp(
+      `\\b(?:${month})[a-z]*\\.?\\s+${DAY}\\s*(?:–|-|—|to|until)\\s*${DAY},?\\s*${YEAR}\\b`,
+      'i',
+    ),
+    // 10–12 March 2027
+    new RegExp(
+      `\\b${DAY}\\s*(?:–|-|—|to|until)\\s*${DAY}\\s+(?:${month})[a-z]*\\.?,?\\s*${YEAR}\\b`,
+      'i',
+    ),
+    // 10 March – 12 March 2027
+    new RegExp(
+      `\\b${DAY}\\s+(?:${month})[a-z]*\\.?\\s*(?:–|-|—|to|until)\\s*${DAY}\\s+(?:${month})[a-z]*\\.?,?\\s*${YEAR}\\b`,
+      'i',
+    ),
+    // 10 March 2027 – 12 March 2027
+    new RegExp(
+      `\\b${DAY}\\s+(?:${month})[a-z]*\\.?,?\\s*${YEAR}\\s*(?:–|-|—|to|until)\\s*${DAY}\\s+(?:${month})[a-z]*\\.?,?\\s*${YEAR}\\b`,
+      'i',
+    ),
+    // September 1, 2027, to August 31, 2028
+    new RegExp(
+      `\\b(?:${month})[a-z]*\\.?\\s+${DAY},?\\s*${YEAR}\\s*,?\\s*(?:–|-|—|to|until)\\s*(?:${month})[a-z]*\\.?\\s+${DAY},?\\s*${YEAR}\\b`,
+      'i',
+    ),
+    // 2027-05-28 to 2027-06-11
+    new RegExp(
+      `\\b${YEAR}-\\d{1,2}-\\d{1,2}\\s*(?:–|-|—|to|until)\\s*${YEAR}-\\d{1,2}-\\d{1,2}\\b`,
+      'i',
+    ),
+    // 28/05/2027 – 11/06/2027
+    new RegExp(
+      `\\b\\d{1,2}/\\d{1,2}/${YEAR}\\s*(?:–|-|—|to|until)\\s*\\d{1,2}/\\d{1,2}/${YEAR}\\b`,
+      'i',
+    ),
+  ];
+}
+
+function findEventRange(text) {
+  for (const pattern of eventRangePatterns()) {
+    const match = pattern.exec(text);
+    if (match) return { text: match[0], index: match.index };
+  }
+  return null;
+}
+
+function findSingleEventDate(text) {
+  const month = MONTH_PATTERN;
+  const patterns = [
+    new RegExp(`\\b(?:${month})[a-z]*\\.?\\s+${DAY},?\\s*${YEAR}\\b`, 'i'),
+    new RegExp(`\\b${DAY}\\s+(?:${month})[a-z]*\\.?,?\\s*${YEAR}\\b`, 'i'),
+    new RegExp(`\\b${YEAR}-\\d{1,2}-\\d{1,2}\\b`, 'i'),
+    new RegExp(`\\b\\d{1,2}/\\d{1,2}/${YEAR}\\b`, 'i'),
+  ];
+  for (const pattern of patterns) {
+    const match = pattern.exec(text);
+    if (match) return match[0];
+  }
+  return null;
+}
+
+function cleanEventPhrase(raw) {
+  return String(raw ?? '')
+    .replace(
+      /^(?:event\s+dates?|program(?:me)?\s+dates?|conference\s+dates?|summit\s+dates?|dates?|from|on)\s*:?\s*/i,
+      '',
+    )
+    .replace(/\s*\([^)]*\)\s*$/g, '')
+    .replace(
+      /\s+(?:financial\s+benefits?|benefits?|deadline|number\s+of\s+selected(?:\s+participants)?|opportunity\s+type|eligibility|location|duration|program(?:me)?\s+dates?|application\s+deadline|who\s+can\s+apply)\s*:?.*$/i,
+      '',
+    )
+    .replace(/\s+(?:to|until)\s+/gi, ' – ')
+    .replace(/\s*[–—-]\s*/g, ' – ')
+    .replace(/,\s*–\s*/g, ' – ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[,\s]+|[,\s]+$/g, '')
+    .slice(0, 120)
+    .trim();
+}
+
+/**
+ * Extract when the event/program takes place, separately from the deadline.
+ * Prefers labeled windows ("Program dates: ...", "will be held ...") and
+ * date ranges. Event dates are free-text for display, not scheduling.
+ */
+export function extractEventDate(text) {
+  if (!text) return null;
+  const clean = collapseWhitespace(text);
+
+  EVENT_CONTEXT.lastIndex = 0;
+  let match;
+  let examined = 0;
+  while ((match = EVENT_CONTEXT.exec(clean)) !== null && examined < 8) {
+    examined += 1;
+    const start = match.index;
+    const window = clean.slice(start, start + 180);
+
+    if (EVENT_CLAUSE_CONTEXT.test(match[0])) {
+      const clause = clean
+        .slice(start, start + 160)
+        .split(/(?<=[.!?])\s/)[0]
+        .replace(/\([^)]*\)/g, '')
+        .trim();
+      const cleanedClause = cleanEventPhrase(clause);
+      const clauseRange = findEventRange(clause);
+      const startsWithDate = new RegExp(
+        `^(?:from\\s+)?(?:${MONTH_PATTERN}|${DAY}|${YEAR})`,
+        'i',
+      ).test(cleanedClause);
+
+      if (clauseRange) {
+        const multiRange = /[&;]/.test(clause) && clauseRange.index <= 45;
+        const chosen = multiRange ? cleanedClause : cleanEventPhrase(clauseRange.text);
+        if (chosen.length <= 120) return chosen;
+      }
+      if (startsWithDate && cleanedClause.length <= 120) return cleanedClause;
+    }
+
+    const range = findEventRange(window);
+    if (range && !deadlineBefore(window, range.index)) return cleanEventPhrase(range.text);
+
+    const single = findSingleEventDate(window.slice(0, 100));
+    if (single) {
+      const index = window.indexOf(single);
+      if (!deadlineBefore(window, index)) return cleanEventPhrase(single);
+    }
+  }
+
+  const globalRange = findEventRange(clean);
+  if (globalRange && !deadlineBefore(clean, globalRange.index)) {
+    return cleanEventPhrase(globalRange.text);
+  }
+
+  return null;
+}
+
 function analyzeFees(text) {
   const mentions = positions(FEE_TERMS, text);
   if (mentions.length === 0) return { charged: false, explicitFree: false, evidence: null };
@@ -255,6 +418,7 @@ export function classify(item, { now = new Date() } = {}) {
   );
 
   const deadlineInfo = extractDeadline(text, now);
+  const eventDate = extractEventDate(text);
   const fee = analyzeFees(text);
   const fullHits = activeHits(FULLY_FUNDED, text, { checkAfter: false });
   const negativeHits = activeHits(NOT_FULLY_FUNDED, text, { checkAfter: false });
@@ -306,6 +470,7 @@ export function classify(item, { now = new Date() } = {}) {
     applicationFee: fee.charged ? 'charged' : fee.explicitFree ? 'none-stated' : 'not-mentioned',
     deadline: deadlineInfo.date,
     deadlineLabel: deadlineInfo.label,
+    eventDate,
     daysLeft,
     reason,
     confidence:
@@ -329,6 +494,10 @@ export function mergeVerdict(item, verdict) {
   const deadline = /^\d{4}-\d{2}-\d{2}$/.test(String(verdict.deadline ?? ''))
     ? verdict.deadline
     : item.deadline;
+  const eventDate =
+    typeof verdict.eventDates === 'string' && verdict.eventDates.trim() && verdict.eventDates !== 'null'
+      ? truncate(verdict.eventDates.trim(), 90)
+      : item.eventDate;
 
   return {
     ...item,
@@ -336,6 +505,7 @@ export function mergeVerdict(item, verdict) {
     fullyFunded: verdict.fullyFunded,
     applicationFee: verdict.applicationFee ? 'charged' : 'none-stated',
     deadline,
+    eventDate,
     daysLeft: deadline ? daysUntil(deadline) : null,
     reason: truncate(verdict.reason || (accepted ? 'Verified fully funded, no fee.' : 'Rejected by AI review.'), 180),
     location: truncate(verdict.location || item.location || '', 80),

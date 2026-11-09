@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classify, extractDeadline, mergeVerdict, parseDateIn } from '../src/analyze.js';
+import { classify, extractDeadline, extractEventDate, mergeVerdict, parseDateIn } from '../src/analyze.js';
 
 const NOW = new Date('2026-11-09T12:00:00');
 
@@ -184,4 +184,49 @@ test('holds roundup listicles for manual review instead of accepting them', () =
   );
   assert.equal(result.status, 'review');
   assert.match(result.reason, /roundup/i);
+});
+
+test('extracts event dates separately from the deadline', () => {
+  assert.match(
+    extractEventDate('The summit will take place from 10 to 12 March 2027 in Berlin.'),
+    /10 – 12 March 2027/,
+  );
+  assert.match(
+    extractEventDate(
+      'Program Dates: May 28 – June 11 & June 18 – July 2, 2027 (depending on field)',
+    ),
+    /May 28.*July 2, 2027/,
+  );
+  assert.equal(
+    extractEventDate('Deadline: 15 January 2027. The conference will be held on 10 March 2027.'),
+    '10 March 2027',
+  );
+  assert.equal(extractEventDate('Fully funded. Deadline: 15 January 2027.'), null);
+  assert.match(
+    extractEventDate('The fellowship runs from September 1, 2027, to August 31, 2028.'),
+    /September 1, 2027.*August 31, 2028/,
+  );
+  assert.match(
+    extractEventDate('Applications close 10 March 2027; event 12-14 March 2027.'),
+    /12 – 14 March 2027/,
+  );
+});
+
+test('classify stores the event date', () => {
+  const result = classify(
+    item({ summary: 'Fully funded. Deadline: 15 January 2027. The summit takes place 10–12 March 2027 in Berlin.' }),
+    { now: NOW },
+  );
+  assert.match(result.eventDate, /10 – 12 March 2027/);
+});
+
+test('does not mistake a deadline for an event date', () => {
+  const text =
+    'The event will take place at the University of British Columbia. ' +
+    'The summit covers airfare and accommodation. Deadline: 30th Nov 2026.';
+  assert.equal(extractEventDate(text), null);
+});
+
+test('does not treat an application window as an event date', () => {
+  assert.equal(extractEventDate('Applications are open 1–15 March 2027.'), null);
 });

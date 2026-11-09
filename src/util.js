@@ -167,7 +167,11 @@ export function cleanTitle(input = '') {
     .replace(/([A-Z]{2,})([A-Z][a-z])/g, '$1 $2')
     .replace(/https?:\/\/\S+/gi, ' ')
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim()
+    .replace(
+      /^\s*(?:only\s+)?(?:last\s+)?(?:\d+\s+days?\s+left(?:\s+to\s+apply)?)\s*:?\s*/i,
+      '',
+    );
 
   const cuts = [
     /\bApplications?\s+(?:are|is)\s+(?:now\s+)?open\b/i,
@@ -179,7 +183,21 @@ export function cleanTitle(input = '') {
     /\bDegree\s+Level\s*:/i,
     /\bProgram(?:me)?\s+Dates?\s*:/i,
     /\bDuration\s*:/i,
-    /\s*(?:\(\s*)?No\s+Application\s+Fee\b/i,    /\bLink\s*:/i,
+    /(?<!Application\s)\bDeadline\s*:/i,
+    /\bHost\s+Country\s*:/i,
+    /\bEligible\s+Countr(?:y|ies)\s*:/i,
+    /\bScholarship\s+For\s*:/i,
+    /\bCountr(?:y|ies)\s*:/i,
+    /\b\d+\s+days?\s+left\b/i,
+    /\bStudy\s+for\b/i,
+    /\s+#[A-Za-z0-9_]+/,
+    /\s*(?:\(\s*)?No\s+Application\s+Fee\b/i,
+    /\bLink\s*:/i,
+    /\bOfficial\s+Link\s*:/i,
+    /\bVisit\s*:/i,
+    /\b(?:The\s+)?Scholarship\s+Covers\b/i,
+    /\bOpen\s+to\s+all\s+Nationalities\b/i,
+    /\bNo\s+IELTS\b/i,
     /\bBenefits?\s*:/i,
     /\bEligibility\s*:/i,
     /\b(?:Click|Read)\s+(?:here|more)\b/i,
@@ -197,7 +215,7 @@ export function cleanTitle(input = '') {
 }
 
 const TITLE_STOPWORDS = new Set(
-  'a an the and or of for to in on at with by from fully funded funding sponsor sponsored scholarship scholarships fellowship fellowships program programme opportunity opportunities apply application deadline 2026 2027'.split(
+  'a an the and or of for to in on at with by from fully funded funding sponsor sponsored scholarship scholarships fellowship fellowships program programme opportunity opportunities apply application deadline'.split(
     ' ',
   ),
 );
@@ -263,6 +281,10 @@ function titleCountries(title) {
   return found;
 }
 
+function titleYears(title) {
+  return new Set([...String(title ?? '').matchAll(/\b(20\d{2})\b/g)].map((match) => match[1]));
+}
+
 /** True when two headlines describe the same program (same tokens, or close). */
 export function similarTitles(left, right) {
   const countriesA = titleCountries(left);
@@ -270,6 +292,13 @@ export function similarTitles(left, right) {
   if (countriesA.size && countriesB.size) {
     const shared = [...countriesA].some((country) => countriesB.has(country));
     if (!shared) return false;
+  }
+
+  const yearsA = titleYears(left);
+  const yearsB = titleYears(right);
+  if (yearsA.size && yearsB.size) {
+    const sharedYear = [...yearsA].some((year) => yearsB.has(year));
+    if (!sharedYear) return false;
   }
 
   const a = titleTokens(left);

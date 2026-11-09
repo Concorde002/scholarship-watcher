@@ -78,7 +78,8 @@ export function askHidden(rl, query) {
     };
 
     rl.question('', (answer) => {
-      rl._writeToOutput = original ?? (() => {});
+      if (original) rl._writeToOutput = original;
+      else delete rl._writeToOutput;
       stdout.write('\n');
       resolve(answer.trim());
     });
@@ -131,6 +132,10 @@ export async function runSetup() {
       stdout.write('  3) Resend API\n');
       stdout.write('  4) No email — just write the digest to data/digests/\n');
       provider = await ask(rl, 'Choose 1-4', '1');
+      while (!['1', '2', '3', '4'].includes(provider)) {
+        stdout.write('Pick 1, 2, 3 or 4.\n');
+        provider = await ask(rl, 'Choose 1-4', '1');
+      }
     }
 
     const mail = {
@@ -152,7 +157,7 @@ export async function runSetup() {
       mail.smtpSecure = true;
       mail.smtpUser = await ask(rl, 'Gmail address', config.mail.smtpUser || to);
       mail.from = await ask(rl, 'From address', config.mail.from || mail.smtpUser);
-      mail.smtpPass = await askHidden(rl, 'Gmail app password (input hidden): ');
+      mail.smtpPass = (await askHidden(rl, 'Gmail app password (input hidden): ')).replace(/\s+/g, '');
     } else if (provider === '2') {
       mail.smtpHost = await ask(rl, 'SMTP host', config.mail.smtpHost);
       mail.smtpPort = Number(await ask(rl, 'SMTP port', String(config.mail.smtpPort || 587)));

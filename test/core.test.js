@@ -185,3 +185,22 @@ test('cleanTitle cuts a polluted Telegram "Apply:" suffix', () => {
     '07 Day Leadership Program 2027 in Belgium (Fully Funded)',
   );
 });
+
+test('digest includes the event date when present', () => {
+  const now = new Date(2026, 10, 9, 8, 0, 0);
+  const item = digestItem('event', { eventDate: '10–12 March 2027' });
+  const digest = prepareDigest({ now, accepted: [item], newIds: new Set(['event']) });
+  assert.match(renderText(digest), /When: 10–12 March 2027/);
+  assert.match(renderHtml(digest), /When:<\/strong> 10–12 March 2027/);
+});
+
+test('similarTitles does not merge different programme years', () => {
+  assert.equal(
+    similarTitles('Harvard LEAD Fellowship 2026 in USA', 'Harvard LEAD Fellowship 2027 in USA'),
+    false,
+  );
+  assert.equal(
+    similarTitles('Harvard LEAD Fellowship 2027–2028', 'Harvard LEAD Fellowship 2027'),
+    true,
+  );
+});

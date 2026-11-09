@@ -7,11 +7,12 @@ import { loadConfig, loadSources, paths } from './config.js';
 import { fetchSource, fetchPageText } from './fetch-sources.js';
 import { classify, mergeVerdict } from './analyze.js';
 import { reviewWithLlm } from './llm.js';
-import { fingerprint, itemId, mapLimit, similarTitles, daysUntil } from './util.js';
+import { dateKey, fingerprint, itemId, mapLimit, similarTitles, daysUntil } from './util.js';
 import { loadSeen, loadStore, markSeen, pruneSeen, saveSeen, saveStore, updateStore, writeDigestFiles } from './store.js';
 import { prepareDigest, renderHtml, renderText, subjectFor } from './digest.js';
 import { describeMailConfig, sendDigest, sendTestEmail } from './mailer.js';
-import { installSchedule, removeSchedule, scheduleStatus } from './schedule.js';
+import { installSchedule, nextRunAt, removeSchedule, scheduleStatus } from './schedule.js';
+import { buildSourceStatuses, loadStatus, saveStatus } from './status.js';
 import { runSetup, ask, askHidden } from './setup.js';
 import {
   closeInstagram,
@@ -95,15 +96,32 @@ async function enrich(items, config) {
 
 async function commandRun(options) {
   const config = loadConfig();
-  const useLlm = options.llm ? true : options.noLlm ? false : config.useLlm;
-  let sources = loadSources().filter((source) => source.enabled);
+  const startedAt = new Date();
+  let useLlm = options.llm ? true : options.noLlm ? false : config.useLlm;
+  if (useLlm && config.llmModel && !/^[^/\s]+\/[^/\s]+/.test(config.llmModel)) {
+    logWarn(`OPENCODE_MODEL "${config.llmModel}" is not in provider/model form. Skipping AI review for this run.`);
+    useLlm = false;
+  }
+  const allSources = loadSources();
+  let instagramSkipped = false;
+  let sources = allSources.filter((source) => source.enabled);
 
   if (sources.some((source) => source.type === 'instagram') && !hasInstagramSession()) {
     logWarn('Instagram sources skipped: no saved session. Run `npm run instagram:login` once.');
+    instagramSkipped = true;
     sources = sources.filter((source) => source.type !== 'instagram');
   }
 
   const now = new Date();
+  const mailStatus = describeMailConfig(config.mail);
+  const emailStatus = {
+    configured: mailStatus.configured,
+    sent: false,
+    to: config.mail.to || null,
+    transport: mailStatus.transport ?? null,
+    error: null,
+    at: null,
+  };
 
   if (sources.length === 0) throw new Error('No enabled sources in config/sources.json');
 
@@ -275,7 +293,34 @@ async function commandRun(options) {
     },
   });
 
+  const scheduleTime = process.env.SCHEDULE_TIME || '08:00';
+  const writeRunStatus = () => {
+    saveStatus({
+      kind: 'run',
+      startedAt: startedAt.toISOString(),
+      finishedAt: new Date().toISOString(),
+      durationMs: Date.now() - startedAt.getTime(),
+      scheduleTime,
+      nextRunAt: nextRunAt(scheduleTime).toISOString(),
+      counts: {
+        fetched: rawItems.length,
+        unique: unique.length,
+        unseen: unseen.length,
+        processed: fresh.length,
+        accepted: acceptedToday.length,
+        rejected: rejectedCount,
+        review: reviewCount,
+        sourceErrors: errors.length,
+      },
+      sources: buildSourceStatuses(allSources, results, { instagramSkipped }),
+      email: emailStatus,
+      digestDay: digest.day,
+    });
+  };
+
   if (digest.empty && !config.sendEmpty) {
+    emailStatus.error = 'No matches and SEND_EMPTY is off';
+    writeRunStatus();
     log('No new fully funded matches today and SEND_EMPTY is off. Nothing sent.');
     return;
   }
@@ -283,7 +328,7 @@ async function commandRun(options) {
   const subject = subjectFor(digest);
   const text = renderText(digest);
   const html = renderHtml(digest);
-  const files = writeDigestFiles(digest.day, text, html);
+  const files = writeDigestFiles(digest.day, text, html, { preview: options.dryRun });
   log(`Digest written to ${files.html}`);
 
   if (options.dryRun) {
@@ -292,31 +337,39 @@ async function commandRun(options) {
     return;
   }
 
-  const mailStatus = describeMailConfig(config.mail);
   if (mailStatus.configured) {
     const result = await sendDigest({ subject, html, text }, config.mail);
+    emailStatus.at = new Date().toISOString();
     if (!result.sent) {
+      emailStatus.error = result.reason;
+      writeRunStatus();
       logWarn(`Email failed: ${result.reason}`);
       logWarn('State was not advanced, so tomorrow will retry these opportunities.');
       process.exitCode = 1;
       return;
     }
+    emailStatus.sent = true;
+    emailStatus.transport = result.transport;
     log(`Email sent to ${config.mail.to} via ${result.transport}.`);
   } else {
+    emailStatus.error = mailStatus.reason;
     logWarn(`No email configured (${mailStatus.reason}). Local mode: digest written only.`);
     console.log(`\n${text}\n`);
   }
 
   if (options.noSave) {
+    writeRunStatus();
     log('--no-save: state not updated.');
     return;
   }
 
   if (!mailStatus.configured && !config.saveWithoutEmail) {
+    writeRunStatus();
     log('No email configured: state not advanced, so the backlog is not lost. Run `npm run setup`.');
     return;
   }
 
+  writeRunStatus();
   markSeen(seen, acceptedToday, now);
   pruneSeen(seen, now);
   saveSeen(seen);
@@ -325,11 +378,14 @@ async function commandRun(options) {
 }
 
 async function commandCheckSources(options) {
+  const startedAt = new Date();
   const allSources = loadSources();
-  let selected = options.all ? allSources : allSources.filter((source) => source.enabled);
+  let instagramSkipped = false;
+  let selected = allSources.filter((source) => source.enabled);
 
   if (selected.some((source) => source.type === 'instagram') && !hasInstagramSession()) {
     logWarn('Instagram sources skipped: no saved session. Run `npm run instagram:login` once.');
+    instagramSkipped = true;
     selected = selected.filter((source) => source.type !== 'instagram');
   }
 
@@ -349,6 +405,36 @@ async function commandCheckSources(options) {
       console.log(`- ${source.name}: ${source.note ?? 'disabled'}`);
     }
   }
+
+  const previous = loadStatus();
+  const previousRun =
+    previous?.kind === 'run'
+      ? {
+          finishedAt: previous.finishedAt,
+          startedAt: previous.startedAt,
+          counts: previous.counts,
+          email: previous.email,
+          digestDay: previous.digestDay,
+        }
+      : previous?.lastRun ?? null;
+  const scheduleTime = process.env.SCHEDULE_TIME || '08:00';
+
+  saveStatus({
+    kind: 'check',
+    startedAt: startedAt.toISOString(),
+    finishedAt: new Date().toISOString(),
+    durationMs: Date.now() - startedAt.getTime(),
+    scheduleTime,
+    nextRunAt: nextRunAt(scheduleTime).toISOString(),
+    counts: {
+      fetched: results.reduce((total, result) => total + result.items.length, 0),
+      sourceErrors: results.filter((result) => result.error).length,
+    },
+    sources: buildSourceStatuses(allSources, results, { instagramSkipped }),
+    email: previousRun?.email ?? previous?.email ?? null,
+    digestDay: previousRun?.digestDay ?? previous?.digestDay ?? null,
+    lastRun: previousRun,
+  });
 
   const enabledResults = results.filter((result) => result.source.enabled);
   if (enabledResults.length && enabledResults.every((result) => result.error)) {

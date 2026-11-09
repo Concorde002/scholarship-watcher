@@ -15,6 +15,14 @@ export function parseScheduleTime(value = '08:00') {
   return { hour, minute };
 }
 
+/** Next local occurrence of the configured daily run time. */
+export function nextRunAt(time = '08:00', now = new Date()) {
+  const { hour, minute } = parseScheduleTime(time);
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next;
+}
+
 function xmlEscape(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -169,8 +177,7 @@ export function removeSchedule() {
   return { platform: process.platform, removed: false, file: null };
 }
 
-export function scheduleStatus() {
-  if (process.platform === 'darwin') {
+export function scheduleStatus() {  if (process.platform === 'darwin') {
     const file = launchAgentFile();
     const installed = existsSync(file);
     const loaded = installed ? Boolean(quietExec('launchctl', ['print', `gui/${uid()}/${LABEL}`])) : false;

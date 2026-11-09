@@ -1,6 +1,8 @@
 # Scholarship Watcher
 
-A local daily watcher for **fully funded** scholarships, fellowships, conferences and youth summits. It reads the portals that feed the big Instagram accounts, rejects paid/self-funded programs and anything that mentions an application or registration fee, extracts deadlines, and emails you one short digest per day.
+i built this so i stop refreshing twenty tabs every morning. it watches the usual scholarship portals, drops anything that wants a fee, and emails me a short list with deadlines and event dates. it runs locally; the only account it touches is a burner instagram.
+
+a local daily watcher for **fully funded** scholarships, fellowships, conferences and youth summits. It reads the portals that feed the big Instagram accounts, rejects paid/self-funded programs and anything that mentions an application or registration fee, extracts deadlines and event dates, and emails you one short digest per day.
 
 Runs on your own machine. No dashboard, no SaaS. The optional Instagram mode uses a burner session stored locally.
 
@@ -10,18 +12,19 @@ Scholarship Watcher · 4 new fully funded · 2 closing soon · 9 Nov
 
 ## What it actually does
 
-1. **Fetches** 14 web/Telegram sources plus 8 Instagram channels: RSS feeds, public Telegram previews, listing pages with no feed, and authenticated Instagram profile grids.
+1. **Fetches** 14 web/Telegram sources plus 10 Instagram channels: RSS feeds, public Telegram previews, listing pages with no feed, and authenticated Instagram profile grids.
 2. **Reads the article or caption**, not just the headline, so fee and deadline language is visible.
 3. **Applies two strict questions**: is it explicitly fully funded? is there any fee?
 4. **Drops** self-funded, partially funded, unfunded, expired, and fee-charging programs.
 5. **Deduplicates** the same program arriving from several aggregators.
-6. **Extracts the application deadline** (not the event date) and groups the digest:
+6. **Extracts the application deadline and the event/program dates** (not the other way around) and groups the digest:
    - Apply today or tomorrow
    - Closing this week
    - New today
    - Still open from the last 10 days
 7. **Emails you** via SMTP or Resend. If email is not configured yet, it writes the digest to `data/digests/` and prints it.
 8. **Runs daily** through macOS `launchd` or Linux `cron`.
+9. **Shows everything in a local dashboard** at `http://127.0.0.1:8787`: live source health, email status, next-run countdown, deadline countdowns and filters.
 
 ## The filter is deliberately strict
 
@@ -53,6 +56,7 @@ cd scholarship-watcher
 npm install
 npm run preview
 npm run instagram:login   # optional, once, for the 8 Instagram channels
+npm run dashboard         # starts http://127.0.0.1:8787
 ```
 
 `npm run preview` fetches everything, prints the digest, writes HTML/Markdown to `data/digests/`, and changes no state. It does **not** send email.
@@ -107,9 +111,34 @@ npm run instagram:login
 - Requires **Google Chrome**. Set `IG_HEADED=1` to watch the daily browser.
 - Personal use only. Automated access can get an account rate-limited or challenged, which is why a burner is recommended.
 
-Handles watched: `@yopportunities`, `@opportunities_corners`, `@opportunitydesk`, `@scholarshipscorner`, `@opportunitiescircleofficial`, `@oya_opportunity`, `@fellowships.guide`, `@glornoscholarships`.
+Handles watched: `@yopportunities`, `@opportunities_corners`, `@opportunitydesk`, `@scholarshipscorner`, `@opportunitiescircleofficial`, `@oya_opportunity`, `@fellowships.guide`, `@glornoscholarships`, `@opportunitiesforafricans`, `@afterschoolafrica`.
 
 Two handles from the original directory (`@opportunitiescircle`, `@oyaopportunities`) return “page isn’t available”. The live handles are pulled from the parent websites and used above.
+
+## Local dashboard
+
+```bash
+npm run dashboard
+```
+
+Then open <http://127.0.0.1:8787>. It binds to `127.0.0.1` only.
+
+What is on it:
+
+- every open opportunity with a live deadline countdown
+- event/program dates (`When:`), separate from the application deadline
+- search, source, deadline and sort filters
+- watcher health: last run, duration, next-run countdown, email delivery, Instagram session
+- every source shown as **live**, **failed**, **skipped** or **disabled**, with item counts, timing and the actual error
+- a link to the latest digest
+
+The server reads `data/opportunities.json` and `data/status.json` on every request, so it updates after each run. Change the port with:
+
+```bash
+DASHBOARD_PORT=8788 npm run dashboard
+```
+
+`npm run dashboard -- --open` opens the browser automatically. There is no auth because it only listens on localhost.
 
 ## Daily schedule
 
@@ -145,6 +174,7 @@ launchctl kickstart -k gui/$(id -u)/com.scholarshipwatcher.daily
 | `npm run setup` | Interactive email + schedule wizard |
 | `npm run instagram:login` | One-time Instagram login (burner recommended) |
 | `npm run instagram:status` | Verify the saved Instagram session |
+| `npm run dashboard` | Local dashboard on `http://127.0.0.1:8787` |
 | `npm run check-sources` | Test every enabled source and show item counts |
 | `npm run test-email` | Send a delivery test |
 | `npm run schedule -- --time 07:30` | Install or update the daily job |
@@ -170,13 +200,14 @@ node src/index.js run --verbose          # per-source and per-item detail
 | Opportunities Circle | RSS | Aggregator |
 | OYA Opportunities | RSS | Aggregator |
 | Scholars4Dev | RSS | Academic scholarships |
-| Youth Opportunities | HTML | Conferences + scholarships listing pages |
+| Opportunities for Africans | RSS | Aggregator |
 | One Young World | HTML | Official scholarship page |
 | Lindau Nobel Laureate Meetings | RSS | Official |
 | MCW Global | RSS | Official fellowship |
 | Scholarships Corner | Telegram | Public channel preview, `@scholarshipscorner` |
 | Opportunities Corners | Telegram | Public channel preview, `@opcorners` |
 | Opportunities Circle | Telegram | Public channel preview, `@opportunitiescircleofficial` |
+| Scholarship Region | Telegram | Public channel preview, `@scholarshipregion` |
 | Youth Opportunities | Instagram | Authenticated profile grid |
 | Opportunities Corners | Instagram | Authenticated profile grid |
 | Opportunity Desk | Instagram | Authenticated profile grid |
@@ -185,6 +216,8 @@ node src/index.js run --verbose          # per-source and per-item detail
 | OYA Opportunities | Instagram | Authenticated profile grid |
 | Fellowships Guide | Instagram | Authenticated profile grid |
 | Glorno Scholarships | Instagram | Authenticated profile grid |
+| Opportunities for Africans | Instagram | Authenticated profile grid |
+| After School Africa | Instagram | Authenticated profile grid |
 
 **Instagram mode needs the one-time login above.** It reads the public profile grid of the burner account’s session, not the private inbox or DMs. Public Telegram previews (`t.me/s/<channel>`) require **no Telegram account**: the watcher reads the public preview pages every run. Two handles from the original directory were dead and were replaced with the handles published on the parent websites.
 
@@ -194,6 +227,7 @@ Some sources are present in `config/sources.json` but disabled with a note:
 - **ARMACAD** — no feed, public homepage currently lists stale calls.
 - **For9a** — Arabic-language feed; the English classifier would drop most items.
 - **EURAXESS** — no public RSS; search page is JavaScript-rendered.
+- **Youth Opportunities · website** — the HTML conference/scholarship pages sit behind Cloudflare and usually time out from Node. The `@yopportunities` Instagram source is enabled and covers the same posts.
 - **Youth Opportunities · Telegram** — `youthop.com` does not link an official Telegram channel, and `@youthopportunities` is an unrelated Yemeni channel, so it is disabled instead of parsing the wrong feed.
 - **Falling Walls, HPAIR, World Youth Forum, Hansen Leadership Institute** — no reliable opportunities feed, so they are covered indirectly through the aggregators. Their official pages remain on the digest's permanent watchlist for empty days.
 
@@ -241,6 +275,7 @@ Set `"enabled": false` to keep a source documented without fetching it. `npm run
 | `OPENCODE_BIN` | `opencode` | Path to the CLI |
 | `LLM_LIMIT` | `24` | Max candidates sent to the model |
 | `IG_HEADED` | unset | Set to `1` to watch the Instagram browser during a run |
+| `DASHBOARD_PORT` | `8787` | Local dashboard port |
 
 If email sending fails, the run exits non-zero and **does not advance state**, so yesterday's opportunities are retried on the next run instead of being silently lost.
 
@@ -271,13 +306,15 @@ How it behaves:
 npm test
 ```
 
-Covers the fee/negation rules, mixed-funding bait-and-switch, deadline formats, rolling deadlines, past deadlines, RSS/Atom/Telegram parsing, Instagram caption/title/link extraction, cross-source deduplication, title cleanup, HTML escaping and digest sections.
+Covers the fee/negation rules, mixed-funding bait-and-switch, deadline formats, rolling deadlines, past deadlines, event vs deadline extraction, RSS/Atom/Telegram parsing, Instagram caption/title/link extraction, cross-source deduplication, title cleanup, HTML escaping and digest sections.
 
 ## Project layout
 
 ```text
 config/sources.json     the watched portals
 src/index.js            CLI + pipeline
+src/dashboard.js        local HTTP dashboard + JSON API
+src/status.js           run/source health written to data/status.json
 src/fetch-sources.js    RSS / Atom / Telegram / HTML / Instagram fetching
 src/instagram.js        authenticated Instagram profile-grid scraper + login
 src/analyze.js          fully-funded + no-fee + deadline rules
@@ -287,6 +324,7 @@ src/digest.js           Markdown + responsive HTML email
 src/mailer.js           SMTP + Resend delivery
 src/schedule.js         launchd / cron installer
 src/setup.js            interactive wizard
+public/                 dashboard HTML/CSS/JS (no build step)
 test/                   node:test suites
 data/                   generated state, digests, logs and Instagram session (gitignored)
 ```

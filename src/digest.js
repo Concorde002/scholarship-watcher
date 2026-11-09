@@ -174,6 +174,7 @@ function textItem(item) {
   lines.push(`  ${item.meta || item.host}`);
   lines.push(`  ${item.badge.text}`);
   if (item.reason) lines.push(`  Why: ${item.reason}`);
+  if (item.eventDate) lines.push(`  When: ${item.eventDate}`);
   lines.push(`  ${item.url}`);
   if (item.applyUrl && item.applyUrl !== item.url) lines.push(`  Apply: ${item.applyUrl}`);
   return lines.join('\n');
@@ -232,6 +233,7 @@ function renderItemHtml(item) {
         <div style="margin-top:10px;">
           <span style="display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;color:${tone.fg};background:${tone.bg};border:1px solid ${tone.border};border-radius:999px;padding:4px 10px;">${escapeHtml(item.badge.text)}</span>
         </div>
+        ${item.eventDate ? `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#15211c;margin-top:10px;"><strong>When:</strong> ${escapeHtml(item.eventDate)}</div>` : ''}
         ${item.reason ? `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#5f5b51;margin-top:10px;">${escapeHtml(item.reason)}</div>` : ''}
         <div style="margin-top:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;">
           <a href="${escapeHtml(item.actionUrl)}" style="color:#0f6b4f;font-weight:600;text-decoration:none;">${escapeHtml(item.actionLabel)}</a>

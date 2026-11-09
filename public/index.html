@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Scholarship Watcher · Local dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">SW</span>
+        <div class="brand-text">
+          <strong>Scholarship Watcher</strong>
+          <span>Local dashboard</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="live-pill" id="connection"><span class="dot" id="conn-dot"></span><span id="conn-text">Connecting…</span></span>
+        <a class="ghost-link" href="/digest/latest" target="_blank" rel="noopener">Latest digest</a>
+        <button class="button" id="refresh-btn" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Fully funded only · zero application fee</p>
+          <h1>Open opportunities</h1>
+          <p class="hero-sub" id="hero-sub">Loading the local data…</p>
+        </div>
+        <div class="next-run">
+          <span class="next-label">Next scheduled run</span>
+          <strong id="next-run-countdown">—</strong>
+          <span class="next-meta" id="next-run-label">—</span>
+        </div>
+      </section>
+
+      <section class="status-grid" id="status-grid" aria-label="Watcher status"></section>
+
+      <section class="stats-grid" id="stats-grid" aria-label="Opportunity counts"></section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Filters</h2>
+          <button class="text-button" id="reset-filters" type="button">Reset</button>
+        </div>
+        <div class="controls">
+          <label class="field">
+            <span>Search</span>
+            <input id="search" type="search" placeholder="Title, source, country…" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>Source</span>
+            <select id="source-filter"><option value="all">All sources</option></select>
+          </label>
+          <label class="field">
+            <span>Deadline</span>
+            <select id="urgency-filter">
+              <option value="all">Any deadline</option>
+              <option value="today">Today or tomorrow</option>
+              <option value="week">Next 7 days</option>
+              <option value="month">Next 30 days</option>
+              <option value="none">No deadline listed</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Sort</span>
+            <select id="sort-filter">
+              <option value="deadline">Deadline first</option>
+              <option value="newest">Newest first</option>
+              <option value="source">Source A–Z</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Opportunities</h2>
+          <span class="count-label" id="result-count"></span>
+        </div>
+        <div class="empty" id="empty" hidden>
+          <strong>No opportunities match.</strong>
+          <p>Clear the filters, or run <code>npm run run</code> and refresh.</p>
+        </div>
+        <div class="item-list" id="items"></div>
+      </section>
+
+      <section class="panel sources-panel">
+        <details open>
+          <summary>
+            <span class="summary-title">Sources &amp; health</span>
+            <span class="summary-meta" id="source-summary"></span>
+          </summary>
+          <div class="source-list" id="sources"></div>
+        </details>
+      </section>
+
+      <footer class="footer">
+        <span>Updates after each daily run. Data stays on this machine.</span>
+        <span>Always confirm funding and deadlines on the official page. Never pay an application or registration fee.</span>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

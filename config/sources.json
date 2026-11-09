@@ -55,6 +55,15 @@
       "tags": ["academic"]
     },
     {
+      "id": "opportunitiesforafricans",
+      "name": "Opportunities for Africans",
+      "type": "rss",
+      "url": "https://opportunitiesforafricans.com/feed",
+      "homepage": "https://opportunitiesforafricans.com",
+      "enabled": true,
+      "tags": ["aggregator"]
+    },
+    {
       "id": "youthop-conferences",
       "name": "Youth Opportunities · Conferences",
       "type": "html",
@@ -63,7 +72,8 @@
       "linkPattern": "youthop\\.com/conferences/[a-z0-9-]{15,}$",
       "titleMin": 20,
       "maxItems": 40,
-      "enabled": true,
+      "enabled": false,
+      "note": "Cloudflare times out from Node on most runs. The @yopportunities Instagram source is enabled and covers the same posts.",
       "tags": ["aggregator"]
     },
     {
@@ -76,7 +86,8 @@
       "excludePattern": "/(undergraduate|post-graduate|post-doctoral|seasonal|summer-school|winter-school)/",
       "titleMin": 20,
       "maxItems": 40,
-      "enabled": true,
+      "enabled": false,
+      "note": "Cloudflare times out from Node on most runs. The @yopportunities Instagram source is enabled and covers the same posts.",
       "tags": ["aggregator"]
     },
     {
@@ -135,6 +146,15 @@
       "type": "telegram",
       "channel": "opportunitiescircleofficial",
       "homepage": "https://t.me/opportunitiescircleofficial",
+      "enabled": true,
+      "tags": ["telegram"]
+    },
+    {
+      "id": "tg-scholarshipregion",
+      "name": "Scholarship Region · Telegram",
+      "type": "telegram",
+      "channel": "scholarshipregion",
+      "homepage": "https://t.me/scholarshipregion",
       "enabled": true,
       "tags": ["telegram"]
     },
@@ -232,6 +252,28 @@
       "handle": "glornoscholarships",
       "url": "https://www.instagram.com/glornoscholarships/",
       "homepage": "https://www.instagram.com/glornoscholarships/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
+      "id": "ig-opportunitiesforafricans",
+      "name": "Opportunities for Africans · Instagram",
+      "type": "instagram",
+      "handle": "opportunitiesforafricans",
+      "url": "https://www.instagram.com/opportunitiesforafricans/",
+      "homepage": "https://www.instagram.com/opportunitiesforafricans/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
+      "id": "ig-afterschoolafrica",
+      "name": "After School Africa · Instagram",
+      "type": "instagram",
+      "handle": "afterschoolafrica",
+      "url": "https://www.instagram.com/afterschoolafrica/",
+      "homepage": "https://www.instagram.com/afterschoolafrica/",
       "maxItems": 12,
       "enabled": true,
       "tags": ["instagram"]

@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { dateKey, daysUntil } from './util.js';
+import { dateKey, daysUntil, fingerprint } from './util.js';
 import { paths } from './config.js';
 
 const EMPTY_STORE = { version: 1, updatedAt: null, items: {} };
@@ -60,6 +60,7 @@ export function updateStore(store, accepted, now = new Date()) {
       category: item.category ?? existing?.category ?? '',
       deadline: item.deadline ?? null,
       deadlineLabel: item.deadlineLabel ?? null,
+      eventDate: item.eventDate ?? existing?.eventDate ?? null,
       reason: item.reason,
       confidence: item.confidence,
       verifiedBy: item.verifiedBy ?? existing?.verifiedBy ?? 'heuristic',
@@ -69,7 +70,42 @@ export function updateStore(store, accepted, now = new Date()) {
   }
 
   store.updatedAt = new Date().toISOString();
+  dedupeStore(store);
   pruneStore(store, now);
+  return store;
+}
+
+/**
+ * Exact-title duplicates can accumulate across days when the same post arrives
+ * from Telegram and Instagram. Keep the entry with the best apply link.
+ */
+export function dedupeStore(store) {
+  const byFingerprint = new Map();
+
+  for (const item of Object.values(store.items)) {
+    const key = fingerprint(item.title);
+    const existing = byFingerprint.get(key);
+    if (!existing) {
+      byFingerprint.set(key, item);
+      continue;
+    }
+
+    const score = (entry) =>
+      (entry.applyUrl ? 2 : 0) +
+      (entry.sourceType === 'instagram' ? 1 : 0) +
+      Math.min(1, (entry.summary?.length ?? 0) / 1000);
+    const winner = score(item) > score(existing) ? item : existing;
+    const loser = winner === existing ? item : existing;
+
+    winner.firstSeen = [winner.firstSeen, loser.firstSeen].filter(Boolean).sort()[0] ?? winner.firstSeen;
+    winner.lastSeen = [winner.lastSeen, loser.lastSeen].filter(Boolean).sort().pop() ?? winner.lastSeen;
+    for (const field of ['eventDate', 'location', 'category', 'applyUrl', 'sourceType']) {
+      if (!winner[field] && loser[field]) winner[field] = loser[field];
+    }
+    byFingerprint.set(key, winner);
+  }
+
+  store.items = Object.fromEntries([...byFingerprint.values()].map((item) => [item.id, item]));
   return store;
 }
 
@@ -99,9 +135,9 @@ export function pruneSeen(seen, now = new Date(), maxAgeDays = 180) {
   return seen;
 }
 
-export function writeDigestFiles(day, markdown, html) {
+export function writeDigestFiles(day, markdown, html, { preview = false } = {}) {
   mkdirSync(paths.digests, { recursive: true });
-  const base = join(paths.digests, day);
+  const base = join(paths.digests, `${preview ? 'preview-' : ''}${day}`);
   writeFileSync(`${base}.md`, markdown);
   writeFileSync(`${base}.html`, html);
   return { markdown: `${base}.md`, html: `${base}.html` };

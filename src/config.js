@@ -14,6 +14,7 @@ export const paths = {
   digests: join(ROOT, 'data', 'digests'),
   store: join(ROOT, 'data', 'opportunities.json'),
   seen: join(ROOT, 'data', 'seen.json'),
+  status: join(ROOT, 'data', 'status.json'),
   env: join(ROOT, '.env'),
   logs: join(ROOT, 'data', 'logs'),
 };

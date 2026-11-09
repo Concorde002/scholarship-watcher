@@ -6,13 +6,14 @@ const SYSTEM_INSTRUCTIONS = `You are a strict scholarship eligibility filter. Do
 1. fullyFunded: true ONLY if the program explicitly says it is fully funded, fully sponsored, 100% funded, or all expenses paid (travel, accommodation, and/or fees covered). Partial funding, tuition-only, or "scholarship available" is false. If unsure, false.
 2. applicationFee: true if there is ANY application, registration, participation, program, processing, seat or deposit fee, even if a waiver exists. "No application fee" is false.
 3. deadline: the APPLICATION deadline as YYYY-MM-DD, or null. Never use the event date. If no deadline is stated, null.
-4. location: host country or "Online" (max 6 words, or null).
-5. category: one of Scholarship, Fellowship, Conference, Summit, Exchange, Grant, Internship, Other.
-6. confidence: 0 to 1.
-7. reason: max 15 words, why accepted or rejected.
+4. eventDates: when the conference, summit or programme actually takes place, as a short human string (e.g. "10–12 March 2027", "May 28 – June 11, 2027", "September 2027 – August 2028"), or null. Never put the application deadline here.
+5. location: host country or "Online" (max 6 words, or null).
+6. category: one of Scholarship, Fellowship, Conference, Summit, Exchange, Grant, Internship, Other.
+7. confidence: 0 to 1.
+8. reason: max 15 words, why accepted or rejected.
 
 Return ONLY a JSON array. No markdown, no prose:
-[{"id":"...","fullyFunded":true,"applicationFee":false,"deadline":"2026-01-15","location":"Germany","category":"Conference","confidence":0.9,"reason":"..."}]
+[{"id":"...","fullyFunded":true,"applicationFee":false,"deadline":"2026-01-15","eventDates":"10–12 March 2027","location":"Germany","category":"Conference","confidence":0.9,"reason":"..."}]
 
 Items:`;
 
