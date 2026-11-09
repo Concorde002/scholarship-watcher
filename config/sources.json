@@ -1,0 +1,235 @@
+{
+  "sources": [
+    {
+      "id": "opportunitiescorners",
+      "name": "Opportunities Corners",
+      "type": "rss",
+      "url": "https://opportunitiescorners.com/feed",
+      "homepage": "https://opportunitiescorners.com",
+      "enabled": true,
+      "tags": ["aggregator"]
+    },
+    {
+      "id": "opportunitydesk",
+      "name": "Opportunity Desk",
+      "type": "rss",
+      "url": "https://opportunitydesk.org/feed",
+      "homepage": "https://opportunitydesk.org",
+      "enabled": true,
+      "tags": ["aggregator"]
+    },
+    {
+      "id": "scholarshipscorner",
+      "name": "Scholarships Corner",
+      "type": "rss",
+      "url": "https://scholarshipscorner.website/feed",
+      "homepage": "https://scholarshipscorner.website",
+      "enabled": true,
+      "tags": ["aggregator"]
+    },
+    {
+      "id": "opportunitiescircle",
+      "name": "Opportunities Circle",
+      "type": "rss",
+      "url": "https://www.opportunitiescircle.com/feed",
+      "homepage": "https://www.opportunitiescircle.com",
+      "enabled": true,
+      "tags": ["aggregator"]
+    },
+    {
+      "id": "oyaop",
+      "name": "OYA Opportunities",
+      "type": "rss",
+      "url": "https://www.oyaop.com/feed",
+      "homepage": "https://www.oyaop.com",
+      "enabled": true,
+      "tags": ["aggregator"]
+    },
+    {
+      "id": "scholars4dev",
+      "name": "Scholars4Dev",
+      "type": "rss",
+      "url": "https://www.scholars4dev.com/feed",
+      "homepage": "https://www.scholars4dev.com",
+      "enabled": true,
+      "tags": ["academic"]
+    },
+    {
+      "id": "youthop-conferences",
+      "name": "Youth Opportunities · Conferences",
+      "type": "html",
+      "url": "https://www.youthop.com/conferences",
+      "homepage": "https://www.youthop.com",
+      "linkPattern": "youthop\\.com/conferences/[a-z0-9-]{15,}$",
+      "titleMin": 20,
+      "maxItems": 40,
+      "enabled": true,
+      "tags": ["aggregator"]
+    },
+    {
+      "id": "youthop-scholarships",
+      "name": "Youth Opportunities · Scholarships",
+      "type": "html",
+      "url": "https://www.youthop.com/scholarships",
+      "homepage": "https://www.youthop.com",
+      "linkPattern": "youthop\\.com/scholarships/[a-z0-9-]{15,}$",
+      "excludePattern": "/(undergraduate|post-graduate|post-doctoral|seasonal|summer-school|winter-school)/",
+      "titleMin": 20,
+      "maxItems": 40,
+      "enabled": true,
+      "tags": ["aggregator"]
+    },
+    {
+      "id": "oneyoungworld",
+      "name": "One Young World",
+      "type": "html",
+      "url": "https://www.oneyoungworld.com/scholarships",
+      "homepage": "https://www.oneyoungworld.com",
+      "linkPattern": "/scholarship/[a-z0-9-]{5,}$",
+      "titleMin": 20,
+      "maxItems": 30,
+      "enabled": true,
+      "tags": ["official", "summit"]
+    },
+    {
+      "id": "lindau",
+      "name": "Lindau Nobel Laureate Meetings",
+      "type": "rss",
+      "url": "https://www.lindau-nobel.org/feed",
+      "homepage": "https://www.lindau-nobel.org",
+      "maxItems": 30,
+      "enabled": true,
+      "tags": ["official", "academic"]
+    },
+    {
+      "id": "mcwglobal",
+      "name": "MCW Global",
+      "type": "rss",
+      "url": "https://mcwglobal.org/feed",
+      "homepage": "https://mcwglobal.org",
+      "maxItems": 30,
+      "enabled": true,
+      "tags": ["official", "fellowship"]
+    },
+    {
+      "id": "tg-scholarshipscorner",
+      "name": "Scholarships Corner · Telegram",
+      "type": "telegram",
+      "channel": "scholarshipscorner",
+      "homepage": "https://t.me/scholarshipscorner",
+      "enabled": true,
+      "tags": ["telegram"]
+    },
+    {
+      "id": "tg-opportunitiescorners",
+      "name": "Opportunities Corners · Telegram",
+      "type": "telegram",
+      "channel": "opportunitiescorners",
+      "homepage": "https://t.me/opportunitiescorners",
+      "enabled": true,
+      "tags": ["telegram"]
+    },
+    {
+      "id": "tg-youthopportunities",
+      "name": "Youth Opportunities · Telegram",
+      "type": "telegram",
+      "channel": "youthopportunities",
+      "homepage": "https://t.me/youthopportunities",
+      "enabled": true,
+      "tags": ["telegram"]
+    },
+    {
+      "id": "profellow",
+      "name": "ProFellow",
+      "type": "rss",
+      "url": "https://www.profellow.com/feed",
+      "homepage": "https://www.profellow.com",
+      "enabled": false,
+      "note": "Blocked by Cloudflare (HTTP 403) for non-browser clients. Enable if you put an RSS bridge in front of it.",
+      "tags": ["academic"]
+    },
+    {
+      "id": "armacad",
+      "name": "ARMACAD",
+      "type": "html",
+      "url": "https://www.armacad.info/",
+      "homepage": "https://www.armacad.info",
+      "linkPattern": "/20\\d{2}-\\d{2}-\\d{2}--",
+      "titleMin": 25,
+      "enabled": false,
+      "note": "No feed and the public homepage currently lists stale calls. Kept here so it is easy to re-enable.",
+      "tags": ["academic"]
+    },
+    {
+      "id": "for9a",
+      "name": "For9a",
+      "type": "rss",
+      "url": "https://www.for9a.com/en/sitemap/feed",
+      "homepage": "https://www.for9a.com/en",
+      "maxItems": 80,
+      "enabled": false,
+      "note": "Arabic-language feed (1.4 MB). The English keyword classifier would drop most items; enable and add Arabic keywords in src/analyze.js if you want it.",
+      "tags": ["aggregator"]
+    },
+    {
+      "id": "euraxess",
+      "name": "EURAXESS",
+      "type": "html",
+      "url": "https://euraxess.ec.europa.eu/jobs/search?keywords=fully%20funded",
+      "homepage": "https://euraxess.ec.europa.eu",
+      "linkPattern": "/jobs/",
+      "titleMin": 20,
+      "enabled": false,
+      "note": "No public RSS feed; the search page is JavaScript-rendered. Kept as a placeholder.",
+      "tags": ["official", "academic"]
+    },
+    {
+      "id": "falling-walls",
+      "name": "Falling Walls",
+      "type": "html",
+      "url": "https://falling-walls.com/",
+      "homepage": "https://falling-walls.com",
+      "linkPattern": "falling-walls\\.com/",
+      "titleMin": 20,
+      "enabled": false,
+      "note": "No opportunities feed; the site is event-programme focused. Covered indirectly by the aggregators.",
+      "tags": ["official", "summit"]
+    },
+    {
+      "id": "hpair",
+      "name": "HPAIR",
+      "type": "html",
+      "url": "https://www.hpair.org/",
+      "homepage": "https://www.hpair.org",
+      "linkPattern": "hpair\\.org/",
+      "titleMin": 20,
+      "enabled": false,
+      "note": "No feed; applications are hosted on Airtable. Covered indirectly by the aggregators.",
+      "tags": ["official", "summit"]
+    },
+    {
+      "id": "wyf",
+      "name": "World Youth Forum",
+      "type": "html",
+      "url": "https://wyfegypt.com/",
+      "homepage": "https://wyfegypt.com",
+      "linkPattern": "wyfegypt\\.com/",
+      "titleMin": 20,
+      "enabled": false,
+      "note": "Site returned HTTP 523 during setup. Covered indirectly by the aggregators.",
+      "tags": ["official", "summit"]
+    },
+    {
+      "id": "hansen",
+      "name": "Hansen Leadership Institute",
+      "type": "html",
+      "url": "https://www.hansenleadership.org/",
+      "homepage": "https://www.hansenleadership.org",
+      "linkPattern": "hansenleadership\\.org/",
+      "titleMin": 20,
+      "enabled": false,
+      "note": "Site did not respond during setup. Covered indirectly by the aggregators.",
+      "tags": ["official", "fellowship"]
+    }
+  ]
+}

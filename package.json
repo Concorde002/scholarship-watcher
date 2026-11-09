@@ -1,0 +1,30 @@
+{
+  "name": "scholarship-watcher",
+  "version": "1.0.0",
+  "description": "Local daily watcher for fully funded scholarships, fellowships and conferences. Filters out paid and self-funded programs, then emails you a deadline-aware digest.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "scholarship-watcher": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js run",
+    "run": "node src/index.js run",
+    "preview": "node src/index.js run --dry-run --no-save --no-llm",
+    "preview:llm": "node src/index.js run --dry-run --no-save",
+    "setup": "node src/index.js setup",
+    "test-email": "node src/index.js test-email",
+    "check-sources": "node src/index.js check-sources",
+    "schedule": "node src/index.js schedule",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.1.2",
+    "dotenv": "^17.2.3",
+    "fast-xml-parser": "^5.3.1",
+    "nodemailer": "^7.0.9"
+  }
+}
