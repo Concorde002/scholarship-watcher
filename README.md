@@ -57,6 +57,8 @@ npm run instagram:login   # optional, once, for the 8 Instagram channels
 
 `npm run preview` fetches everything, prints the digest, writes HTML/Markdown to `data/digests/`, and changes no state. It does **not** send email.
 
+If you run the watcher before configuring email, it prints and archives the digest but **does not advance state**, so the backlog is still there for your first real email. Set `SAVE_WITHOUT_EMAIL=true` if you want a local-only archive that advances state.
+
 Then run the setup wizard:
 
 ```bash
@@ -230,6 +232,7 @@ Set `"enabled": false` to keep a source documented without fetching it. `npm run
 | `RESEND_API_KEY` | — | Use Resend instead of SMTP |
 | `SCHEDULE_TIME` | `08:00` | Time used by `npm run schedule` |
 | `SEND_EMPTY` | `true` | Send a short digest even when nothing matched |
+| `SAVE_WITHOUT_EMAIL` | `false` | Advance state when no email is configured (local-only mode) |
 | `MAX_AGE_DAYS` | `60` | Ignore feed items older than this |
 | `ENRICH_LIMIT` | `30` | How many article pages to read per run |
 | `USE_LLM` | `false` | Optional opencode AI verification |

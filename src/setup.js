@@ -195,6 +195,7 @@ export async function runSetup() {
       RESEND_API_KEY: mail.resendKey,
       SCHEDULE_TIME: time,
       SEND_EMPTY: 'true',
+      SAVE_WITHOUT_EMAIL: String(provider === '4'),
       MAX_AGE_DAYS: '60',
       ENRICH_LIMIT: '30',
       USE_LLM: String(useLlm),

@@ -312,6 +312,11 @@ async function commandRun(options) {
     return;
   }
 
+  if (!mailStatus.configured && !config.saveWithoutEmail) {
+    log('No email configured: state not advanced, so the backlog is not lost. Run `npm run setup`.');
+    return;
+  }
+
   markSeen(seen, acceptedToday, now);
   pruneSeen(seen, now);
   saveSeen(seen);

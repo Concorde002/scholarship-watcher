@@ -39,6 +39,7 @@ export function loadConfig() {
     enrichLimit: int(process.env.ENRICH_LIMIT, 30),
     maxAgeDays: int(process.env.MAX_AGE_DAYS, 60),
     sendEmpty: bool(process.env.SEND_EMPTY, true),
+    saveWithoutEmail: bool(process.env.SAVE_WITHOUT_EMAIL, false),
     useLlm: bool(process.env.USE_LLM, false),
     llmModel: process.env.OPENCODE_MODEL?.trim() || '',
     llmBin: process.env.OPENCODE_BIN?.trim() || 'opencode',
