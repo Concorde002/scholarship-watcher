@@ -223,6 +223,22 @@ export async function fetchSource(source) {
     } else if (source.type === 'html') {
       const html = await fetchText(source.url);
       items = parseHtml(html, source);
+    } else if (source.type === 'instagram') {
+      const { fetchInstagramProfile } = await import('./instagram.js');
+      const posts = await fetchInstagramProfile(source);
+      items = posts
+        .map((post) => {
+          const item = normalizeItem({
+            title: post.title,
+            url: post.url,
+            summary: post.summary,
+            publishedAt: post.publishedAt,
+            source,
+          });
+          if (item) item.applyUrl = post.applyUrl ?? null;
+          return item;
+        })
+        .filter(Boolean);
     } else {
       throw new Error(`Unknown source type: ${source.type}`);
     }

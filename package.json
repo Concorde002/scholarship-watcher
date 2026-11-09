@@ -1,7 +1,7 @@
 {
   "name": "scholarship-watcher",
-  "version": "1.0.0",
-  "description": "Local daily watcher for fully funded scholarships, fellowships and conferences. Filters out paid and self-funded programs, then emails you a deadline-aware digest.",
+  "version": "1.1.0",
+  "description": "Local daily watcher for fully funded scholarships, fellowships and conferences. Filters out fees and self-funded programs, then emails you a deadline-aware digest. Includes RSS, Telegram and authenticated Instagram sources.",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -16,6 +16,8 @@
     "preview": "node src/index.js run --dry-run --no-save --no-llm",
     "preview:llm": "node src/index.js run --dry-run --no-save",
     "setup": "node src/index.js setup",
+    "instagram:login": "node src/index.js instagram-login",
+    "instagram:status": "node src/index.js instagram-status",
     "test-email": "node src/index.js test-email",
     "check-sources": "node src/index.js check-sources",
     "schedule": "node src/index.js schedule",
@@ -25,6 +27,7 @@
     "cheerio": "^1.1.2",
     "dotenv": "^17.2.3",
     "fast-xml-parser": "^5.3.1",
-    "nodemailer": "^7.0.9"
+    "nodemailer": "^7.0.9",
+    "playwright-core": "^1.65.0"
   }
 }

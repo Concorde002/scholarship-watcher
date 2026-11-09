@@ -54,6 +54,8 @@ export function updateStore(store, accepted, now = new Date()) {
       url: item.url,
       summary: item.summary?.slice(0, 500) ?? '',
       sourceName: item.sourceName,
+      sourceType: item.sourceType ?? existing?.sourceType ?? '',
+      applyUrl: item.applyUrl ?? existing?.applyUrl ?? null,
       location: item.location ?? existing?.location ?? '',
       category: item.category ?? existing?.category ?? '',
       deadline: item.deadline ?? null,

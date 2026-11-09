@@ -2,7 +2,7 @@
 
 A local daily watcher for **fully funded** scholarships, fellowships, conferences and youth summits. It reads the portals that feed the big Instagram accounts, rejects paid/self-funded programs and anything that mentions an application or registration fee, extracts deadlines, and emails you one short digest per day.
 
-Runs on your own machine. No account, no dashboard, no SaaS.
+Runs on your own machine. No dashboard, no SaaS. The optional Instagram mode uses a burner session stored locally.
 
 ```text
 Scholarship Watcher · 4 new fully funded · 2 closing soon · 9 Nov
@@ -10,8 +10,8 @@ Scholarship Watcher · 4 new fully funded · 2 closing soon · 9 Nov
 
 ## What it actually does
 
-1. **Fetches** 14 live sources: RSS feeds, public Telegram channel previews, and listing pages that have no feed.
-2. **Reads the article**, not just the headline, so fee and deadline language is visible.
+1. **Fetches** 14 web/Telegram sources plus 8 Instagram channels: RSS feeds, public Telegram previews, listing pages with no feed, and authenticated Instagram profile grids.
+2. **Reads the article or caption**, not just the headline, so fee and deadline language is visible.
 3. **Applies two strict questions**: is it explicitly fully funded? is there any fee?
 4. **Drops** self-funded, partially funded, unfunded, expired, and fee-charging programs.
 5. **Deduplicates** the same program arriving from several aggregators.
@@ -45,13 +45,14 @@ The classifier runs on keywords and a few negation rules. It is intentionally co
 
 ## Quick start
 
-Requirements: Node.js **20+** and `git`. Optional: the `opencode` CLI for AI-assisted verification.
+Requirements: Node.js **20+** and `git`. Optional: **Google Chrome** for the Instagram sources, and the `opencode` CLI for AI-assisted verification.
 
 ```bash
 git clone https://github.com/Concorde002/scholarship-watcher.git
 cd scholarship-watcher
 npm install
 npm run preview
+npm run instagram:login   # optional, once, for the 8 Instagram channels
 ```
 
 `npm run preview` fetches everything, prints the digest, writes HTML/Markdown to `data/digests/`, and changes no state. It does **not** send email.
@@ -80,6 +81,33 @@ Gmail requires an **App Password**, not your normal password:
 2. Open <https://myaccount.google.com/apppasswords>.
 3. Create an app password for "Mail".
 4. Paste it into `npm run setup` (input is hidden).
+
+## Instagram (optional, one-time login)
+
+Instagram now requires a logged-in session to read profile pages. Log in once with a burner account:
+
+```bash
+npm run instagram:login
+```
+
+- Opens a real Chrome window. Enter the password, then the WhatsApp/email code if 2FA is enabled. Tick **“Trust this device”** so daily runs skip 2FA.
+- The command waits up to five minutes for you to finish the code or a security challenge, then verifies the session against a live profile.
+- Only the browser session is stored, under `data/instagram/` (mode `700`, gitignored). The password is never written to disk or committed.
+- Daily runs reuse that session headlessly. It reads the 12 most recent posts per handle, one profile at a time, with a 2–4 second delay.
+- Captions are parsed for funding, fees, deadlines and application links. Short links such as `opd.to` and Instagram’s link-in-bio redirects are resolved.
+- Check or repair the session anytime:
+
+```bash
+npm run instagram:status
+npm run instagram:login
+```
+
+- Requires **Google Chrome**. Set `IG_HEADED=1` to watch the daily browser.
+- Personal use only. Automated access can get an account rate-limited or challenged, which is why a burner is recommended.
+
+Handles watched: `@yopportunities`, `@opportunities_corners`, `@opportunitydesk`, `@scholarshipscorner`, `@opportunitiescircleofficial`, `@oya_opportunity`, `@fellowships.guide`, `@glornoscholarships`.
+
+Two handles from the original directory (`@opportunitiescircle`, `@oyaopportunities`) return “page isn’t available”. The live handles are pulled from the parent websites and used above.
 
 ## Daily schedule
 
@@ -113,6 +141,8 @@ launchctl kickstart -k gui/$(id -u)/com.scholarshipwatcher.daily
 | `npm run run` | Real run: fetch, filter, email, save state |
 | `npm run preview` | Dry run, no email, no state, prints digest |
 | `npm run setup` | Interactive email + schedule wizard |
+| `npm run instagram:login` | One-time Instagram login (burner recommended) |
+| `npm run instagram:status` | Verify the saved Instagram session |
 | `npm run check-sources` | Test every enabled source and show item counts |
 | `npm run test-email` | Send a delivery test |
 | `npm run schedule -- --time 07:30` | Install or update the daily job |
@@ -145,8 +175,16 @@ node src/index.js run --verbose          # per-source and per-item detail
 | Scholarships Corner | Telegram | Public channel preview |
 | Opportunities Corners | Telegram | Public channel preview |
 | Youth Opportunities | Telegram | Public channel preview |
+| Youth Opportunities | Instagram | Authenticated profile grid |
+| Opportunities Corners | Instagram | Authenticated profile grid |
+| Opportunity Desk | Instagram | Authenticated profile grid |
+| Scholarships Corner | Instagram | Authenticated profile grid |
+| Opportunities Circle | Instagram | Authenticated profile grid |
+| OYA Opportunities | Instagram | Authenticated profile grid |
+| Fellowships Guide | Instagram | Authenticated profile grid |
+| Glorno Scholarships | Instagram | Authenticated profile grid |
 
-**Instagram is not scraped.** Those accounts mostly repost from the websites and Telegram channels above, and scraping Instagram requires a logged-in account and violates its terms. The watcher follows the original publishers instead. Public Telegram previews (`t.me/s/<channel>`) are used because they require no account.
+**Instagram mode needs the one-time login above.** It reads the public profile grid of the burner account’s session, not the private inbox or DMs. Public Telegram previews (`t.me/s/<channel>`) require no account. Two handles from the original directory were dead and were replaced with the handles published on the parent websites.
 
 Some sources are present in `config/sources.json` but disabled with a note:
 
@@ -177,6 +215,7 @@ Types:
 - `rss` — RSS 2.0 or Atom feed.
 - `telegram` — public channel preview; set `channel` to the handle.
 - `html` — listing page; set `linkPattern` (regex on the URL) and optionally `excludePattern`, `titleMin`, `maxItems`.
+- `instagram` — authenticated profile grid; set `handle` and optionally `maxItems` (default 12). Requires `npm run instagram:login`.
 
 Set `"enabled": false` to keep a source documented without fetching it. `npm run check-sources` shows every enabled source plus a reminder for disabled ones.
 
@@ -197,6 +236,7 @@ Set `"enabled": false` to keep a source documented without fetching it. `npm run
 | `OPENCODE_MODEL` | CLI default | e.g. `provider/model` |
 | `OPENCODE_BIN` | `opencode` | Path to the CLI |
 | `LLM_LIMIT` | `24` | Max candidates sent to the model |
+| `IG_HEADED` | unset | Set to `1` to watch the Instagram browser during a run |
 
 If email sending fails, the run exits non-zero and **does not advance state**, so yesterday's opportunities are retried on the next run instead of being silently lost.
 
@@ -227,14 +267,15 @@ How it behaves:
 npm test
 ```
 
-Covers the fee/negation rules, mixed-funding bait-and-switch, deadline formats, rolling deadlines, past deadlines, RSS/Atom/Telegram parsing, cross-source deduplication, title cleanup, HTML escaping and digest sections.
+Covers the fee/negation rules, mixed-funding bait-and-switch, deadline formats, rolling deadlines, past deadlines, RSS/Atom/Telegram parsing, Instagram caption/title/link extraction, cross-source deduplication, title cleanup, HTML escaping and digest sections.
 
 ## Project layout
 
 ```text
 config/sources.json     the watched portals
 src/index.js            CLI + pipeline
-src/fetch-sources.js    RSS / Atom / Telegram / HTML fetching
+src/fetch-sources.js    RSS / Atom / Telegram / HTML / Instagram fetching
+src/instagram.js        authenticated Instagram profile-grid scraper + login
 src/analyze.js          fully-funded + no-fee + deadline rules
 src/llm.js              optional opencode CLI verification
 src/store.js            seen/store state in data/
@@ -243,8 +284,10 @@ src/mailer.js           SMTP + Resend delivery
 src/schedule.js         launchd / cron installer
 src/setup.js            interactive wizard
 test/                   node:test suites
-data/                   generated state, digests and logs (gitignored)
+data/                   generated state, digests, logs and Instagram session (gitignored)
 ```
+
+The Instagram browser profile is at `data/instagram/profile/`. It contains session cookies, so treat it like a password and never commit it.
 
 ## Troubleshooting
 
@@ -252,11 +295,19 @@ data/                   generated state, digests and logs (gitignored)
 
 **Gmail "Username and Password not accepted".** Use an App Password and make sure 2-Step Verification is on.
 
+**Instagram sources are skipped.** There is no saved session. Run `npm run instagram:login` once. If it was already saved, the session expired: `npm run instagram:status`, then log in again.
+
+**Instagram asks for a code.** The login command opens Chrome and waits up to five minutes. Enter the WhatsApp/email code there and tick “Trust this device”. You can also pass a fresh code: `IG_2FA_CODE=123456 npm run instagram:login`.
+
+**An Instagram handle stops working.** The account was renamed, made private, or deleted. Update `handle` in `config/sources.json` or disable that source.
+
+**Chrome is not found.** Install Google Chrome. The Instagram fetcher uses your installed Chrome through Playwright, so no extra browser download is needed.
+
 **A source is red in `npm run check-sources`.** That source is blocking the request (Cloudflare, timeout, changed markup). The rest of the run continues. Fix the feed/URL or disable the source.
 
 **The scheduled job does not run.** Check `launchctl print gui/$(id -u)/com.scholarshipwatcher.daily` and the logs under `data/logs/`. Reinstall with `npm run schedule -- --time 08:00`.
 
-**Too many items.** Tighten `MAX_AGE_DAYS`, or disable Telegram sources in `config/sources.json`. The digest only shows 20 new items per day.
+**Too many items.** Tighten `MAX_AGE_DAYS`, or disable Telegram/Instagram sources in `config/sources.json`. The digest only shows 20 new items per day.
 
 **The digest is empty.** That is a valid result. With `SEND_EMPTY=true` you still get a short email and the permanent watchlist, which confirms the watcher is alive.
 
@@ -264,6 +315,7 @@ data/                   generated state, digests and logs (gitignored)
 
 - Everything runs locally.
 - `.env` is gitignored and written with mode `600`.
+- The Instagram browser session lives in `data/instagram/` (mode `700`, gitignored). The password is never stored; only the session cookies are. Use a burner account.
 - No analytics, no telemetry, no third-party database.
 - Emails go through the SMTP/Resend account you configure.
 - Opportunity links point to third-party sites; verify the host before entering personal data.

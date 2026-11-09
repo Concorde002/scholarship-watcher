@@ -163,3 +163,18 @@ test('similarTitles understands UN / United Nations abbreviations', () => {
     true,
   );
 });
+
+test('digest shows a separate apply link when Instagram provides one', () => {
+  const now = new Date(2026, 10, 9, 8, 0, 0);
+  const item = digestItem('ig', {
+    sourceType: 'instagram',
+    url: 'https://www.instagram.com/p/abc/',
+    applyUrl: 'https://example.org/apply-now',
+  });
+  const digest = prepareDigest({ now, accepted: [item], newIds: new Set(['ig']) });
+  const text = renderText(digest);
+  const html = renderHtml(digest);
+  assert.match(text, /Apply: https:\/\/example\.org\/apply-now/);
+  assert.match(html, /https:\/\/example\.org\/apply-now/);
+  assert.match(html, /Apply on example\.org/);
+});

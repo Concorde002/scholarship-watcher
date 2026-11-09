@@ -139,6 +139,94 @@
       "tags": ["telegram"]
     },
     {
+      "id": "ig-yopportunities",
+      "name": "Youth Opportunities · Instagram",
+      "type": "instagram",
+      "handle": "yopportunities",
+      "url": "https://www.instagram.com/yopportunities/",
+      "homepage": "https://www.instagram.com/yopportunities/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
+      "id": "ig-opportunitiescorners",
+      "name": "Opportunities Corners · Instagram",
+      "type": "instagram",
+      "handle": "opportunities_corners",
+      "url": "https://www.instagram.com/opportunities_corners/",
+      "homepage": "https://www.instagram.com/opportunities_corners/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
+      "id": "ig-opportunitydesk",
+      "name": "Opportunity Desk · Instagram",
+      "type": "instagram",
+      "handle": "opportunitydesk",
+      "url": "https://www.instagram.com/opportunitydesk/",
+      "homepage": "https://www.instagram.com/opportunitydesk/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
+      "id": "ig-scholarshipscorner",
+      "name": "Scholarships Corner · Instagram",
+      "type": "instagram",
+      "handle": "scholarshipscorner",
+      "url": "https://www.instagram.com/scholarshipscorner/",
+      "homepage": "https://www.instagram.com/scholarshipscorner/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
+      "id": "ig-opportunitiescircle",
+      "name": "Opportunities Circle · Instagram",
+      "type": "instagram",
+      "handle": "opportunitiescircleofficial",
+      "url": "https://www.instagram.com/opportunitiescircleofficial/",
+      "homepage": "https://www.instagram.com/opportunitiescircleofficial/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
+      "id": "ig-oyaopportunities",
+      "name": "OYA Opportunities · Instagram",
+      "type": "instagram",
+      "handle": "oya_opportunity",
+      "url": "https://www.instagram.com/oya_opportunity/",
+      "homepage": "https://www.instagram.com/oya_opportunity/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
+      "id": "ig-fellowshipsguide",
+      "name": "Fellowships Guide · Instagram",
+      "type": "instagram",
+      "handle": "fellowships.guide",
+      "url": "https://www.instagram.com/fellowships.guide/",
+      "homepage": "https://www.instagram.com/fellowships.guide/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
+      "id": "ig-glornoscholarships",
+      "name": "Glorno Scholarships · Instagram",
+      "type": "instagram",
+      "handle": "glornoscholarships",
+      "url": "https://www.instagram.com/glornoscholarships/",
+      "homepage": "https://www.instagram.com/glornoscholarships/",
+      "maxItems": 12,
+      "enabled": true,
+      "tags": ["instagram"]
+    },
+    {
       "id": "profellow",
       "name": "ProFellow",
       "type": "rss",

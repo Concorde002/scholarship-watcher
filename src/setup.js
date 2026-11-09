@@ -64,7 +64,7 @@ function buildEnvFile(values) {
   ].join('\n');
 }
 
-function askHidden(rl, query) {
+export function askHidden(rl, query) {
   return new Promise((resolve) => {
     const original = rl._writeToOutput.bind(rl);
     stdout.write(query);
@@ -83,7 +83,7 @@ function askRaw(rl, prompt) {
   return new Promise((resolve) => rl.question(prompt, resolve));
 }
 
-async function ask(rl, question, fallback = '') {
+export async function ask(rl, question, fallback = '') {
   const suffix = fallback ? ` [${fallback}]` : '';
   const answer = (await askRaw(rl, `${question}${suffix}: `)).trim();
   return answer || fallback;
@@ -239,6 +239,7 @@ export async function runSetup() {
     stdout.write('\nDone.\n');
     stdout.write(`  Preview now: npm run preview\n`);
     stdout.write(`  Real run:    npm run run\n`);
+    stdout.write(`  Instagram:   npm run instagram:login (once, optional)\n`);
     stdout.write(`  Schedule:    ${status.installed ? 'installed' : 'not installed'}\n`);
     stdout.write(`  Digests:     ${paths.digests}\n`);
   } finally {

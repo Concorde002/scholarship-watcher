@@ -32,9 +32,18 @@ function deadlineBadge(item, now) {
 }
 
 function decorate(item, now) {
+  const actionUrl = item.applyUrl || item.url;
+  const actionHost = hostOf(actionUrl);
+  let actionLabel;
+  if (item.applyUrl) actionLabel = `Apply on ${actionHost} →`;
+  else if (item.sourceType === 'instagram') actionLabel = 'Open the post and use its link in bio →';
+  else actionLabel = `Apply on ${actionHost} →`;
+
   return {
     ...item,
     host: hostOf(item.url),
+    actionUrl,
+    actionLabel,
     badge: deadlineBadge(item, now),
     meta: [item.sourceName, item.location, item.category].filter(Boolean).join(' · '),
   };
@@ -166,6 +175,7 @@ function textItem(item) {
   lines.push(`  ${item.badge.text}`);
   if (item.reason) lines.push(`  Why: ${item.reason}`);
   lines.push(`  ${item.url}`);
+  if (item.applyUrl && item.applyUrl !== item.url) lines.push(`  Apply: ${item.applyUrl}`);
   return lines.join('\n');
 }
 
@@ -224,7 +234,7 @@ function renderItemHtml(item) {
         </div>
         ${item.reason ? `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#5f5b51;margin-top:10px;">${escapeHtml(item.reason)}</div>` : ''}
         <div style="margin-top:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;">
-          <a href="${url}" style="color:#0f6b4f;font-weight:600;text-decoration:none;">Apply on ${escapeHtml(item.host)} →</a>
+          <a href="${escapeHtml(item.actionUrl)}" style="color:#0f6b4f;font-weight:600;text-decoration:none;">${escapeHtml(item.actionLabel)}</a>
         </div>
       </td>
     </tr>

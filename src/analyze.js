@@ -60,7 +60,7 @@ const OPPORTUNITY_TERMS =
   /\b(scholarships?|fellowships?|grants?|conferences?|summits?|forums?|exchanges?|internships?|summer\s+schools?|winter\s+schools?|programs?|programmes?|awards?|competitions?|delegates?|opportunit(?:y|ies)|symposium|symposia|workshops?|trainings?)\b/i;
 
 const LISTICLE =
-  /^\s*(?:top\s+\d+|\d+\s+(?:best\s+)?(?:scholarships|fellowships|grants|conferences|summits|opportunities)|(?:latest|new)\s+(?:scholarships|opportunities|fellowships))/i;
+  /^\s*(?:(?:top\s+\d+)|(?:\d+\s+(?:[\w-]+\s+){0,2}(?:scholarships|fellowships|grants|conferences|summits|opportunities))|(?:(?:latest|new)\s+(?:scholarships|opportunities|fellowships))|(?:here\s+are|check\s+out|explore|discover|a\s+list\s+of|list\s+of)\b|(?:fully\s+funded\s+)?(?:scholarships|fellowships|internships|grants|opportunities|conferences)\b.*\b(?:deadlines?|open\s+now)\b)/i;
 
 const STRONG_PROGRAM_TERMS =
   /\b(scholarships?|fellowships?|grants?|conferences?|summits?|exchanges?|summer\s+schools?|winter\s+schools?|internships?|delegates?)\b/i;

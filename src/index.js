@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
+import { createInterface } from 'node:readline';
+import { stdin, stdout } from 'node:process';
 import { loadConfig, loadSources, paths } from './config.js';
 import { fetchSource, fetchPageText } from './fetch-sources.js';
 import { classify, mergeVerdict } from './analyze.js';
@@ -10,7 +12,14 @@ import { loadSeen, loadStore, markSeen, pruneSeen, saveSeen, saveStore, updateSt
 import { prepareDigest, renderHtml, renderText, subjectFor } from './digest.js';
 import { describeMailConfig, sendDigest, sendTestEmail } from './mailer.js';
 import { installSchedule, removeSchedule, scheduleStatus } from './schedule.js';
-import { runSetup } from './setup.js';
+import { runSetup, ask, askHidden } from './setup.js';
+import {
+  closeInstagram,
+  hasInstagramSession,
+  instagramSessionInfo,
+  loginInstagram,
+  verifyInstagramSession,
+} from './instagram.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -22,6 +31,8 @@ Usage:
   npm run run                 Fetch sources and send the daily digest
   npm run preview             Dry run: print the digest, change nothing
   npm run setup               Interactive email + schedule setup
+  npm run instagram:login     One-time Instagram login (burner recommended)
+  npm run instagram:status    Verify the saved Instagram session
   npm run check-sources       Check every enabled source
   npm run test-email          Send a test email
   npm run schedule            Install the daily schedule
@@ -39,6 +50,9 @@ Options for "schedule":
   --time HH:MM                Daily run time (24-hour), default 08:00
   --remove                    Remove the schedule
   --status                    Show whether the schedule is installed
+
+Options for "instagram-login":
+  --no-wait                   Fail instead of waiting for manual 2FA/challenge
 
 The watcher only keeps opportunities that state full funding and show no
 application/registration fee. Everything else is counted and discarded.
@@ -60,7 +74,7 @@ function newestFirst(a, b) {
 
 async function enrich(items, config) {
   const targets = items
-    .filter((item) => item.sourceType !== 'telegram' && (item.summary?.length ?? 0) < 900)
+    .filter((item) => item.sourceType !== 'telegram' && item.sourceType !== 'instagram' && (item.summary?.length ?? 0) < 900)
     .slice(0, config.enrichLimit);
 
   let enriched = 0;
@@ -82,7 +96,13 @@ async function enrich(items, config) {
 async function commandRun(options) {
   const config = loadConfig();
   const useLlm = options.llm ? true : options.noLlm ? false : config.useLlm;
-  const sources = loadSources().filter((source) => source.enabled);
+  let sources = loadSources().filter((source) => source.enabled);
+
+  if (sources.some((source) => source.type === 'instagram') && !hasInstagramSession()) {
+    logWarn('Instagram sources skipped: no saved session. Run `npm run instagram:login` once.');
+    sources = sources.filter((source) => source.type !== 'instagram');
+  }
+
   const now = new Date();
 
   if (sources.length === 0) throw new Error('No enabled sources in config/sources.json');
@@ -300,8 +320,13 @@ async function commandRun(options) {
 }
 
 async function commandCheckSources(options) {
-  const sources = loadSources();
-  const selected = options.all ? sources : sources.filter((source) => source.enabled);
+  const allSources = loadSources();
+  let selected = options.all ? allSources : allSources.filter((source) => source.enabled);
+
+  if (selected.some((source) => source.type === 'instagram') && !hasInstagramSession()) {
+    logWarn('Instagram sources skipped: no saved session. Run `npm run instagram:login` once.');
+    selected = selected.filter((source) => source.type !== 'instagram');
+  }
 
   log(`Checking ${selected.length} source(s)…`);
   const results = await mapLimit(selected, 4, fetchSource);
@@ -312,7 +337,7 @@ async function commandCheckSources(options) {
     console.log(`${status} ${result.source.name.padEnd(36)} ${detail} (${result.ms}ms)`);
   }
 
-  const disabled = sources.filter((source) => !source.enabled);
+  const disabled = allSources.filter((source) => !source.enabled);
   if (disabled.length) {
     console.log('\nDisabled sources:');
     for (const source of disabled) {
@@ -335,6 +360,43 @@ async function commandTestEmail() {
   const result = await sendTestEmail(config.mail);
   if (!result.sent) throw new Error(`Test email failed: ${result.reason}`);
   log(`Test email sent to ${config.mail.to} via ${result.transport}.`);
+}
+
+async function commandInstagramLogin(options) {
+  let username = process.env.IG_USERNAME?.trim() || '';
+  let password = process.env.IG_PASSWORD || '';
+  const code = process.env.IG_2FA_CODE?.trim() || '';
+  let rl = null;
+
+  if (!username || !password) {
+    rl = createInterface({ input: stdin, output: stdout });
+    if (!username) username = await ask(rl, 'Instagram username or email');
+    if (!password) password = await askHidden(rl, 'Instagram password (input hidden): ');
+  }
+
+  try {
+    const result = await loginInstagram({
+      username,
+      password,
+      code,
+      waitForManual: !options.noWait,
+      headless: false,
+    });
+    log(`Instagram login OK for ${result.username}. ${result.posts} recent posts visible.`);
+    log('Session saved in data/instagram/ (gitignored, mode 700).');
+  } finally {
+    if (rl) rl.close();
+  }
+}
+
+async function commandInstagramStatus() {
+  const info = instagramSessionInfo();
+  if (!info) throw new Error('No Instagram session saved. Run: npm run instagram:login');
+  const result = await verifyInstagramSession();
+  log(
+    `Instagram session OK (${result.posts} posts visible, saved ${info.loggedInAt}).` +
+      (result.bioLink ? ' Bio link found.' : ''),
+  );
 }
 
 async function commandSchedule(options) {
@@ -371,6 +433,7 @@ async function main() {
       'dry-run': { type: 'boolean', default: false },
       'no-save': { type: 'boolean', default: false },
       'no-llm': { type: 'boolean', default: false },
+      'no-wait': { type: 'boolean', default: false },
       llm: { type: 'boolean', default: false },
       limit: { type: 'string' },
       verbose: { type: 'boolean', short: 'v', default: false },
@@ -398,6 +461,7 @@ async function main() {
     dryRun: values['dry-run'],
     noSave: values['no-save'],
     noLlm: values['no-llm'],
+    noWait: values['no-wait'],
     llm: values.llm,
     limit: values.limit,
     verbose: values.verbose,
@@ -407,25 +471,35 @@ async function main() {
     status: values.status,
   };
 
-  switch (command) {
-    case 'run':
-      await commandRun(options);
-      break;
-    case 'setup':
-      await runSetup();
-      break;
-    case 'check-sources':
-    case 'sources':
-      await commandCheckSources(options);
-      break;
-    case 'test-email':
-      await commandTestEmail();
-      break;
-    case 'schedule':
-      await commandSchedule(options);
-      break;
-    default:
-      throw new Error(`Unknown command "${command}". Run with --help for usage.`);
+  try {
+    switch (command) {
+      case 'run':
+        await commandRun(options);
+        break;
+      case 'setup':
+        await runSetup();
+        break;
+      case 'instagram-login':
+        await commandInstagramLogin(options);
+        break;
+      case 'instagram-status':
+        await commandInstagramStatus();
+        break;
+      case 'check-sources':
+      case 'sources':
+        await commandCheckSources(options);
+        break;
+      case 'test-email':
+        await commandTestEmail();
+        break;
+      case 'schedule':
+        await commandSchedule(options);
+        break;
+      default:
+        throw new Error(`Unknown command "${command}". Run with --help for usage.`);
+    }
+  } finally {
+    await closeInstagram();
   }
 }
 
