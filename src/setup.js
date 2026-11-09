@@ -66,13 +66,19 @@ function buildEnvFile(values) {
 
 export function askHidden(rl, query) {
   return new Promise((resolve) => {
-    const original = rl._writeToOutput.bind(rl);
+    // Node normally exposes _writeToOutput on readline.Interface, but some
+    // terminal/Node combinations do not. Suppress echo rather than crashing.
+    const original =
+      typeof rl._writeToOutput === 'function' ? rl._writeToOutput.bind(rl) : null;
+    if (!original) rl._writeToOutput = () => {};
+
     stdout.write(query);
     rl._writeToOutput = (text) => {
-      original(String(text).replace(/[^\r\n]/g, '*'));
+      if (original) original(String(text).replace(/[^\r\n]/g, '*'));
     };
+
     rl.question('', (answer) => {
-      rl._writeToOutput = original;
+      rl._writeToOutput = original ?? (() => {});
       stdout.write('\n');
       resolve(answer.trim());
     });
