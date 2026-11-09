@@ -57,10 +57,13 @@ const FEE_COVERED_AFTER =
   /^\s*(?:is|are|will\s+be|shall\s+be)?\s*(?:fully\s+|entirely\s+)?(?:covered|waived|included|reimbursed|paid\s+by\s+(?:the\s+)?(?:host|organi[sz]ers?|program(?:me)?|university))\b/i;
 
 const OPPORTUNITY_TERMS =
-  /\b(scholarship|fellowship|grant|conference|summit|forum|exchange|internship|summer\s+school|winter\s+school|program(?:me)?|award|competition|delegate|opportunit|symposium|workshop|training)\b/i;
+  /\b(scholarships?|fellowships?|grants?|conferences?|summits?|forums?|exchanges?|internships?|summer\s+schools?|winter\s+schools?|programs?|programmes?|awards?|competitions?|delegates?|opportunit(?:y|ies)|symposium|symposia|workshops?|trainings?)\b/i;
+
+const LISTICLE =
+  /^\s*(?:top\s+\d+|\d+\s+(?:best\s+)?(?:scholarships|fellowships|grants|conferences|summits|opportunities)|(?:latest|new)\s+(?:scholarships|opportunities|fellowships))/i;
 
 const STRONG_PROGRAM_TERMS =
-  /\b(scholarship|fellowship|grant|conference|summit|exchange|summer\s+school|winter\s+school|internship|delegate)\b/i;
+  /\b(scholarships?|fellowships?|grants?|conferences?|summits?|exchanges?|summer\s+schools?|winter\s+schools?|internships?|delegates?)\b/i;
 
 function positions(re, text) {
   const found = [];
@@ -229,17 +232,15 @@ function analyzeFees(text) {
   return { charged, explicitFree, evidence };
 }
 
-function pickReason({ fullyFunded, feeCharged, feeEvidence, deadline, publishedAt, now }) {
+function pickReason({ fullyFunded, feeCharged, feeEvidence, deadline, listicle }) {
   if (feeCharged) return `Mentions a ${feeEvidence ?? 'fee'} — excluded by your no-fee rule.`;
   if (fullyFunded === 'mixed') return 'Mentions both fully funded and self-funded/partial options — possible bait-and-switch.';
   if (fullyFunded === false) return 'Explicitly self-funded, partial, or unfunded.';
+  if (listicle) return 'Roundup article, not a single opportunity — pick one manually.';
   if (fullyFunded === true) {
     return deadline
       ? 'States fully funded; no application/registration fee mentioned.'
       : 'States fully funded; no fee mentioned. Confirm the deadline on the official page.';
-  }
-  if (publishedAt && now && Date.now() - Date.parse(publishedAt) > 60 * 86_400_000) {
-    return 'Funding level is not explicit.';
   }
   return 'Funding level is not explicit — needs a manual check.';
 }
@@ -265,6 +266,7 @@ export function classify(item, { now = new Date() } = {}) {
 
   const relevant = OPPORTUNITY_TERMS.test(text);
   const strong = STRONG_PROGRAM_TERMS.test(text);
+  const listicle = LISTICLE.test(item.title ?? '');
 
   let status = 'rejected';
   if (!relevant) {
@@ -274,6 +276,8 @@ export function classify(item, { now = new Date() } = {}) {
   } else if (fullyFunded === false) {
     status = 'rejected';
   } else if (fullyFunded === 'mixed') {
+    status = 'review';
+  } else if (listicle) {
     status = 'review';
   } else if (fullyFunded === true) {
     status = 'accepted';
@@ -292,8 +296,7 @@ export function classify(item, { now = new Date() } = {}) {
     feeCharged: fee.charged,
     feeEvidence: fee.evidence,
     deadline: deadlineInfo.date,
-    publishedAt: item.publishedAt,
-    now,
+    listicle,
   });
 
   return {

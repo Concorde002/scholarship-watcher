@@ -35,6 +35,7 @@ Rejected or held back:
 | Any application / registration / participation / program fee | Rejected |
 | Fee waiver available (fee still exists) | Rejected |
 | "A few fully funded seats, the rest self-funded" | `review` — excluded from the email |
+| Roundup / listicle ("Top 10 scholarships…") | `review` — pick one manually |
 | Funding level not stated | `review` — excluded from the email |
 | Deadline already passed | Expired |
 | Deadline within 1 day | Apply today section |

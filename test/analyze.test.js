@@ -173,3 +173,15 @@ test('matches "Fully Funded" even when a feed concatenates the next word', () =>
   );
   assert.equal(result.status, 'accepted');
 });
+
+test('holds roundup listicles for manual review instead of accepting them', () => {
+  const result = classify(
+    item({
+      title: 'Top 10 Scholarships in Japan for International Students',
+      summary: 'A list of fully funded scholarships in Japan.',
+    }),
+    { now: NOW },
+  );
+  assert.equal(result.status, 'review');
+  assert.match(result.reason, /roundup/i);
+});
