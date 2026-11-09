@@ -4,7 +4,7 @@ i built this so i stop refreshing twenty tabs every morning. it watches the usua
 
 a local daily watcher for **fully funded** scholarships, fellowships, conferences and youth summits. It reads the portals that feed the big Instagram accounts, rejects paid/self-funded programs and anything that mentions an application or registration fee, extracts deadlines and event dates, and emails you one short digest per day.
 
-Runs on your own machine. No dashboard, no SaaS. The optional Instagram mode uses a burner session stored locally.
+The scraper runs on your own machine. The optional hosted watchlist is a Cloudflare Pages site. No dashboard subscription, no analytics.
 
 ```text
 Scholarship Watcher · 4 new fully funded · 2 closing soon · 9 Nov
@@ -140,6 +140,75 @@ DASHBOARD_PORT=8788 npm run dashboard
 
 `npm run dashboard -- --open` opens the browser automatically. There is no auth because it only listens on localhost.
 
+## Hosted watchlist (Cloudflare Pages)
+
+**Live:** <https://scholarship-by0.pages.dev>
+
+`scholarship.pages.dev` was already taken by another Cloudflare account, so Cloudflare assigned the `-by0` subdomain to this project. A custom domain can replace it later.
+
+What is there:
+
+- private access code + email login
+- hard cap of **10 people**
+- saved watchlist stored in D1, not browser localStorage
+- rate limits on login, opportunities, watchlist changes, subscriptions and imports
+- email-list signup (the subscriber list is stored in D1)
+- signed HttpOnly session cookie, 30 days
+- all opportunity data behind the auth API; the static files contain no data
+
+The access code is not in this repo. Set/rotate it with:
+
+```bash
+cd cloud
+npx wrangler pages secret put SITE_ACCESS_CODE --project-name scholarship
+```
+
+The local watcher publishes into the site after a successful run when `PUBLISH_CLOUD=true` is set in `.env`:
+
+```bash
+npm run run            # fetch, email, save state, publish
+npm run publish:cloud  # publish the current store without a run
+```
+
+The mailing list can receive the latest delivered digest:
+
+```bash
+npm run mail:list -- --dry-run
+npm run mail:list
+```
+
+### Architecture and limits
+
+- `cloud/public` — Pages frontend
+- `cloud/functions` — Pages Functions API
+- Cloudflare D1 — users, sessions' watchlists, subscribers, opportunities, rate limits
+- local watcher — RSS/Telegram/HTML/Instagram + opencode AI + SMTP
+- `npm run publish:cloud` — authenticated import into D1
+
+**`opencode` does not run on Cloudflare Pages.** Pages Functions have no shell, no long-running process, no Chrome and no Playwright. The AI/Instagram/SMTP work stays on the machine running the watcher. If that machine is asleep, the hosted site keeps serving the last published data but does not refresh.
+
+For fully cloud-side scraping, use a always-on Node host (VPS, Fly.io, Render, Railway) where Playwright and `opencode` can run, then publish to Pages. Cloudflare Workers cron can do RSS/Telegram/HTML, but not Playwright or the `opencode` CLI; that would need an HTTP model API instead.
+
+Deploy cloud changes with:
+
+```bash
+cd cloud
+npx wrangler pages deploy public --project-name scholarship
+```
+
+Apply D1 migrations with:
+
+```bash
+npx wrangler d1 execute scholarship-watchlist --remote --file cloud/migrations/0001_init.sql
+```
+
+Export the mailing list (admin secret comes from `.env` or Cloudflare):
+
+```bash
+curl -H "x-admin-secret: $CLOUD_ADMIN_SECRET" \
+  https://scholarship-by0.pages.dev/api/admin/subscribers
+```
+
 ## Daily schedule
 
 ```bash
@@ -175,6 +244,8 @@ launchctl kickstart -k gui/$(id -u)/com.scholarshipwatcher.daily
 | `npm run instagram:login` | One-time Instagram login (burner recommended) |
 | `npm run instagram:status` | Verify the saved Instagram session |
 | `npm run dashboard` | Local dashboard on `http://127.0.0.1:8787` |
+| `npm run publish:cloud` | Push the current store to the hosted watchlist |
+| `npm run mail:list -- --dry-run` | Preview sending the latest digest to subscribers |
 | `npm run check-sources` | Test every enabled source and show item counts |
 | `npm run test-email` | Send a delivery test |
 | `npm run schedule -- --time 07:30` | Install or update the daily job |
@@ -276,6 +347,9 @@ Set `"enabled": false` to keep a source documented without fetching it. `npm run
 | `LLM_LIMIT` | `24` | Max candidates sent to the model |
 | `IG_HEADED` | unset | Set to `1` to watch the Instagram browser during a run |
 | `DASHBOARD_PORT` | `8787` | Local dashboard port |
+| `CLOUD_URL` | — | Hosted Pages URL |
+| `CLOUD_ADMIN_SECRET` | — | Admin secret for `publish:cloud` and subscriber export |
+| `PUBLISH_CLOUD` | `false` | Publish after each successful run |
 
 If email sending fails, the run exits non-zero and **does not advance state**, so yesterday's opportunities are retried on the next run instead of being silently lost.
 
@@ -324,7 +398,9 @@ src/digest.js           Markdown + responsive HTML email
 src/mailer.js           SMTP + Resend delivery
 src/schedule.js         launchd / cron installer
 src/setup.js            interactive wizard
-public/                 dashboard HTML/CSS/JS (no build step)
+public/                 local dashboard HTML/CSS/JS (no build step)
+cloud/                  Cloudflare Pages frontend, Functions API, D1 migration
+scripts/                cloud publish + mailing-list helpers
 test/                   node:test suites
 data/                   generated state, digests, logs and Instagram session (gitignored)
 ```

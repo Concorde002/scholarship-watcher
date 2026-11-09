@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createInterface } from 'node:readline';
 import { stdin, stdout } from 'node:process';
@@ -376,6 +378,22 @@ async function commandRun(options) {
   saveSeen(seen);
   saveStore(storeCopy);
   log(`Saved state. ${acceptedToday.length} new item(s) marked as seen.`);
+
+  if (
+    /^(1|true|yes)$/i.test(process.env.PUBLISH_CLOUD || '') &&
+    process.env.CLOUD_URL &&
+    process.env.CLOUD_ADMIN_SECRET
+  ) {
+    try {
+      execFileSync(process.execPath, [join(paths.root, 'scripts', 'publish-cloud.mjs')], {
+        stdio: 'inherit',
+        env: process.env,
+      });
+      log('Published the updated list to the hosted watchlist.');
+    } catch (error) {
+      logWarn(`Cloud publish failed: ${error.message}`);
+    }
+  }
 }
 
 async function commandCheckSources(options) {

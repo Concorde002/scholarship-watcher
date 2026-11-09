@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Scholarship Watchlist</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <section class="auth-view" id="login-view">
+    <div class="auth-card">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">SW</span>
+        <div class="brand-text">
+          <strong>Scholarship Watchlist</strong>
+          <span>Private · 10 people max</span>
+        </div>
+      </div>
+      <p class="eyebrow">Fully funded only · zero application fee</p>
+      <h1>Get in.</h1>
+      <p class="auth-sub">Enter the access code and your email. Your saved opportunities live on this site, not in one browser tab.</p>
+      <form id="login-form" novalidate>
+        <label class="field">
+          <span>Access code</span>
+          <input id="access-code" name="code" type="password" autocomplete="current-password" required>
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input id="login-email" name="email" type="email" autocomplete="email" required>
+        </label>
+        <label class="checkline">
+          <input id="subscribe" type="checkbox" checked>
+          <span>Email me when new fully funded opportunities land</span>
+        </label>
+        <button class="button primary" id="login-btn" type="submit">Enter watchlist</button>
+        <p class="form-error" id="login-error" hidden></p>
+      </form>
+      <p class="fineprint">Private access. Login attempts are rate-limited. The list is capped at 10 people. This is a discovery tool — always verify on the official page.</p>
+    </div>
+  </section>
+
+  <div class="page" id="app-view" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">SW</span>
+        <div class="brand-text">
+          <strong>Scholarship Watchlist</strong>
+          <span id="user-email">Private · 10 people max</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="ghost-link" id="subscribe-btn" type="button">Email list</button>
+        <button class="ghost-link" id="saved-toggle" type="button">Saved (0)</button>
+        <button class="button" id="logout-btn" type="button">Log out</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Fully funded only · zero application fee</p>
+          <h1>Your watchlist</h1>
+          <p class="hero-sub" id="hero-sub">Loading the latest opportunities…</p>
+        </div>
+        <div class="next-run">
+          <span class="next-label">Last data update</span>
+          <strong id="last-sync">—</strong>
+          <span class="next-meta" id="sync-note">Waiting for the watcher to publish</span>
+        </div>
+      </section>
+
+      <section class="stats-grid" id="stats-grid" aria-label="Opportunity counts"></section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Filters</h2>
+          <button class="text-button" id="reset-filters" type="button">Reset</button>
+        </div>
+        <div class="controls">
+          <label class="field">
+            <span>Search</span>
+            <input id="search" type="search" placeholder="Title, source, country…" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>Source</span>
+            <select id="source-filter"><option value="all">All sources</option></select>
+          </label>
+          <label class="field">
+            <span>Deadline</span>
+            <select id="urgency-filter">
+              <option value="all">Any deadline</option>
+              <option value="today">Today or tomorrow</option>
+              <option value="week">Days 2–7</option>
+              <option value="month">Days 8–30</option>
+              <option value="later">31+ days</option>
+              <option value="none">No deadline listed</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Sort</span>
+            <select id="sort-filter">
+              <option value="deadline">Deadline first</option>
+              <option value="newest">Newest first</option>
+              <option value="source">Source A–Z</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Opportunities</h2>
+          <span class="count-label" id="result-count"></span>
+        </div>
+        <div class="empty" id="empty" hidden>
+          <strong>Nothing here yet.</strong>
+          <p id="empty-copy">Clear the filters, or wait for the next data update.</p>
+        </div>
+        <div class="item-list" id="items"></div>
+      </section>
+
+      <footer class="footer">
+        <span>Private watchlist · data stays on the watcher machine and syncs here.</span>
+        <span>Always confirm funding and deadlines on the official page. Never pay an application or registration fee.</span>
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+</body>
+</html>
