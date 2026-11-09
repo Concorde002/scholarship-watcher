@@ -174,9 +174,9 @@ node src/index.js run --verbose          # per-source and per-item detail
 | One Young World | HTML | Official scholarship page |
 | Lindau Nobel Laureate Meetings | RSS | Official |
 | MCW Global | RSS | Official fellowship |
-| Scholarships Corner | Telegram | Public channel preview |
-| Opportunities Corners | Telegram | Public channel preview |
-| Youth Opportunities | Telegram | Public channel preview |
+| Scholarships Corner | Telegram | Public channel preview, `@scholarshipscorner` |
+| Opportunities Corners | Telegram | Public channel preview, `@opcorners` |
+| Opportunities Circle | Telegram | Public channel preview, `@opportunitiescircleofficial` |
 | Youth Opportunities | Instagram | Authenticated profile grid |
 | Opportunities Corners | Instagram | Authenticated profile grid |
 | Opportunity Desk | Instagram | Authenticated profile grid |
@@ -186,7 +186,7 @@ node src/index.js run --verbose          # per-source and per-item detail
 | Fellowships Guide | Instagram | Authenticated profile grid |
 | Glorno Scholarships | Instagram | Authenticated profile grid |
 
-**Instagram mode needs the one-time login above.** It reads the public profile grid of the burner account’s session, not the private inbox or DMs. Public Telegram previews (`t.me/s/<channel>`) require no account. Two handles from the original directory were dead and were replaced with the handles published on the parent websites.
+**Instagram mode needs the one-time login above.** It reads the public profile grid of the burner account’s session, not the private inbox or DMs. Public Telegram previews (`t.me/s/<channel>`) require **no Telegram account**: the watcher reads the public preview pages every run. Two handles from the original directory were dead and were replaced with the handles published on the parent websites.
 
 Some sources are present in `config/sources.json` but disabled with a note:
 
@@ -194,6 +194,7 @@ Some sources are present in `config/sources.json` but disabled with a note:
 - **ARMACAD** — no feed, public homepage currently lists stale calls.
 - **For9a** — Arabic-language feed; the English classifier would drop most items.
 - **EURAXESS** — no public RSS; search page is JavaScript-rendered.
+- **Youth Opportunities · Telegram** — `youthop.com` does not link an official Telegram channel, and `@youthopportunities` is an unrelated Yemeni channel, so it is disabled instead of parsing the wrong feed.
 - **Falling Walls, HPAIR, World Youth Forum, Hansen Leadership Institute** — no reliable opportunities feed, so they are covered indirectly through the aggregators. Their official pages remain on the digest's permanent watchlist for empty days.
 
 Youth Opportunities times out from some networks (the site sits behind Cloudflare). The watcher logs the failure, keeps going, and returns results on later runs.

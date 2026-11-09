@@ -124,8 +124,17 @@
       "id": "tg-opportunitiescorners",
       "name": "Opportunities Corners · Telegram",
       "type": "telegram",
-      "channel": "opportunitiescorners",
-      "homepage": "https://t.me/opportunitiescorners",
+      "channel": "opcorners",
+      "homepage": "https://t.me/opcorners",
+      "enabled": true,
+      "tags": ["telegram"]
+    },
+    {
+      "id": "tg-opportunitiescircle",
+      "name": "Opportunities Circle · Telegram",
+      "type": "telegram",
+      "channel": "opportunitiescircleofficial",
+      "homepage": "https://t.me/opportunitiescircleofficial",
       "enabled": true,
       "tags": ["telegram"]
     },
@@ -135,7 +144,8 @@
       "type": "telegram",
       "channel": "youthopportunities",
       "homepage": "https://t.me/youthopportunities",
-      "enabled": true,
+      "enabled": false,
+      "note": "No official Telegram channel is linked from youthop.com. @youthopportunities is an unrelated Yemeni channel, so this source is disabled rather than parsing the wrong feed.",
       "tags": ["telegram"]
     },
     {

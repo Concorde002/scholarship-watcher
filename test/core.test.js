@@ -178,3 +178,10 @@ test('digest shows a separate apply link when Instagram provides one', () => {
   assert.match(html, /https:\/\/example\.org\/apply-now/);
   assert.match(html, /Apply on example\.org/);
 });
+
+test('cleanTitle cuts a polluted Telegram "Apply:" suffix', () => {
+  assert.equal(
+    cleanTitle('07 Day Leadership Program 2027 in Belgium (Fully Funded)Apply: Application Fees. Open'),
+    '07 Day Leadership Program 2027 in Belgium (Fully Funded)',
+  );
+});

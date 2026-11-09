@@ -172,6 +172,7 @@ export function cleanTitle(input = '') {
   const cuts = [
     /\bApplications?\s+(?:are|is)\s+(?:now\s+)?open\b/i,
     /\bApply\s+(?:here|now|for|via|online)\b/i,
+    /\bApply\s*:/i,
     /\b(?:To|How\s+to)\s+Apply\b/i,
     /\bApply\s+(?:through|using)\b/i,
     /\bStudy\s+Level\s*:/i,
