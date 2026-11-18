@@ -261,7 +261,7 @@ function renderHeader() {
   const saved = state.watchlist.size;
   $('saved-toggle').textContent = `Saved (${saved})`;
   $('saved-toggle').classList.toggle('saved-toggle-active', state.savedOnly);
-  $('hero-sub').textContent = `${counts.open ?? 0} open · ${counts.urgent ?? 0} closing today or tomorrow · ${counts.under18Conferences ?? 0} under-18 conferences · ${saved} saved`;
+  $('hero-sub').textContent = `${counts.open ?? 0} open · ${counts.urgent ?? 0} closing today or tomorrow · ${counts.under18 ?? 0} under-18 opportunities · ${saved} saved`;
   $('last-sync').textContent = state.data?.updatedAt ? timeAgo(state.data.updatedAt) : '—';
   $('sync-note').textContent = state.data?.updatedAt
     ? `Published ${new Date(state.data.updatedAt).toLocaleString('en-GB')}`

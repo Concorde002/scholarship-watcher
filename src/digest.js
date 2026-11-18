@@ -57,11 +57,13 @@ function decorate(item, now) {
 function audienceFor(filters) {
   const under18 = Boolean(filters.under18);
   const conferencesOnly = Boolean(filters.conferencesOnly);
-  if (!under18 && !conferencesOnly) return { active: false, label: null, note: null };
+  if (!under18 && !conferencesOnly) return { active: false, label: null, noun: null, note: null };
   if (under18 && conferencesOnly) {
     return {
       active: true,
+      under18: true,
       label: 'Under-18 conferences',
+      noun: 'under-18 conferences',
       note: filters.strict
         ? 'Only items that explicitly state under-18 eligibility.'
         : 'Conferences that are not marked 18+. Items with no stated age limit are included with a note.',
@@ -70,13 +72,21 @@ function audienceFor(filters) {
   if (under18) {
     return {
       active: true,
-      label: 'Under-18 eligible',
+      under18: true,
+      label: 'Under-18 opportunities',
+      noun: 'under-18 opportunities',
       note: filters.strict
-        ? 'Only items that explicitly state under-18 eligibility.'
-        : 'Items that are not marked 18+. Items with no stated age limit are included with a note.',
+        ? 'Only opportunities that explicitly state under-18 eligibility.'
+        : 'Opportunities that are not marked 18+. Items with no stated age limit are included with a note.',
     };
   }
-  return { active: true, label: 'Conferences only', note: 'Only conferences, summits and forums.' };
+  return {
+    active: true,
+    under18: false,
+    label: 'Conferences only',
+    noun: 'conferences',
+    note: 'Only conferences, summits and forums.',
+  };
 }
 
 /**
@@ -211,7 +221,7 @@ export function subjectFor(digest) {
   const { new: newCount, closing } = digest.counts;
   if (digest.audience?.active) {
     if (digest.empty) {
-      return `Scholarship Watcher · no ${digest.audience.label.toLowerCase()} today · ${digest.shortDate}`;
+      return `Scholarship Watcher · no ${digest.audience.noun} today · ${digest.shortDate}`;
     }
     if (newCount > 0) {
       return `Scholarship Watcher · ${digest.audience.label} · ${newCount} new · ${closing} closing soon · ${digest.shortDate}`;
@@ -254,11 +264,11 @@ export function renderText(digest) {
 
   if (digest.empty) {
     if (digest.audience?.active) {
-      out.push(`No ${digest.audience.label.toLowerCase()} passed the filter today.`);
+      out.push(`No ${digest.audience.noun} passed the filter today.`);
       out.push('');
       out.push(digest.audience.note);
       if (!digest.audience.note.includes('no stated age limit')) {
-        out.push('If you want more options, set UNDER18_STRICT=false to include conferences with no stated age limit.');
+        out.push('If you want more options, set UNDER18_STRICT=false to include opportunities with no stated age limit.');
       }
     } else {
       out.push('No new fully funded opportunities today. Permanent watchlist:');
@@ -336,7 +346,7 @@ export function renderHtml(digest) {
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3f3b33;">
         ${
           digest.audience?.active
-            ? `No ${escapeHtml(digest.audience.label.toLowerCase())} passed the filter today. ${escapeHtml(digest.audience.note)}`
+            ? `No ${escapeHtml(digest.audience.noun)} passed the filter today. ${escapeHtml(digest.audience.note)}`
             : 'No new fully funded opportunities passed the filter today. Here is the permanent watchlist of flagship programs worth checking directly:'
         }
       </div>
@@ -370,7 +380,7 @@ export function renderHtml(digest) {
         <tr>
           <td style="background:#12211b;padding:28px;">
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8fd3b6;font-weight:700;">Scholarship Watcher</div>
-            <div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2;color:#ffffff;margin-top:10px;">${digest.audience?.active ? 'Fully funded. Under-18.' : 'Fully funded. Zero fee.'}</div>
+            <div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2;color:#ffffff;margin-top:10px;">${digest.audience?.active ? (digest.audience.under18 ? 'Fully funded. Under-18.' : 'Fully funded. Conferences.') : 'Fully funded. Zero fee.'}</div>
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#b9c7c0;margin-top:8px;">${escapeHtml(digest.dateLabel)}${digest.audience?.active ? ` · ${escapeHtml(digest.audience.label)}` : ''}</div>
           </td>
         </tr>

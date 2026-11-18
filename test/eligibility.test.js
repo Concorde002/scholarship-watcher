@@ -33,12 +33,13 @@ test('age policy recognises 18+ wording', () => {
 test('age policy recognises high-school and teenage audiences', () => {
   assert.equal(extractAgePolicy('A summit for high school students in Brussels.').under18, 'yes');
   assert.equal(extractAgePolicy('Open to teenagers aged 14 to 19.').under18, 'yes');
+  assert.equal(extractAgePolicy('Submit your high school transcripts and degree certificates.').under18, 'unknown');
 });
 
-test('age policy recognises an explicit lack of age limit', () => {
+test('age policy keeps "no age limit" as unstated rather than confirmed under-18', () => {
   const policy = extractAgePolicy('There is no age limit for this fellowship.');
-  assert.equal(policy.under18, 'yes');
-  assert.equal(policy.label, 'All ages');
+  assert.equal(policy.under18, 'unknown');
+  assert.equal(policy.label, 'No age limit');
 });
 
 test('age policy stays unknown when nothing is stated', () => {
@@ -146,4 +147,46 @@ test('empty audience digest does not advertise the adult watchlist', () => {
   const text = renderText(digest);
   assert.doesNotMatch(text, /One Young World/);
   assert.match(text, /under-18 conferences/i);
+});
+
+test('under-18 opportunities includes scholarships, fellowships and conferences', () => {
+  const now = new Date(2026, 10, 9, 8, 0, 0);
+  const items = [
+    digestItem('scholarship', { title: 'Fully Funded Scholarship 2027', under18: 'yes', ageLabel: '16–18' }),
+    digestItem('fellowship', { title: 'Fully Funded Fellowship 2027', under18: 'yes', ageLabel: '15–17' }),
+    digestItem('conference', { title: 'Global Youth Summit 2027', category: 'Summit', under18: 'yes', ageLabel: '14–18' }),
+    digestItem('adult', { title: 'Adults Only Summit 2027', category: 'Summit', under18: 'no' }),
+    digestItem('unknown', { title: 'Age Unstated Fellowship 2027', under18: 'unknown' }),
+  ];
+
+  const digest = prepareDigest({
+    now,
+    accepted: items,
+    newIds: new Set(items.map((item) => item.id)),
+    filters: { under18: true, strict: true },
+  });
+
+  assert.equal(digest.audience.label, 'Under-18 opportunities');
+  assert.equal(digest.audience.noun, 'under-18 opportunities');
+  assert.deepEqual(
+    [...digest.sections.flatMap((section) => section.items.map((item) => item.id))].sort(),
+    ['conference', 'fellowship', 'scholarship'],
+  );
+  assert.match(renderText(digest), /Age: 15–17/);
+  assert.match(subjectFor(digest), /Under-18 opportunities/);
+});
+
+test('an empty under-18 opportunity digest still produces a sendable email', () => {
+  const digest = prepareDigest({
+    now: new Date(2026, 10, 9),
+    accepted: [],
+    newIds: new Set(),
+    filters: { under18: true, strict: true },
+  });
+  assert.equal(digest.empty, true);
+  assert.match(subjectFor(digest), /no under-18 opportunities today/);
+  const text = renderText(digest);
+  assert.match(text, /No under-18 opportunities passed the filter today/);
+  assert.match(text, /explicitly state under-18 eligibility/);
+  assert.match(renderHtml(digest), /No under-18 opportunities passed the filter today/);
 });

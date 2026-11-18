@@ -22,7 +22,7 @@ Scholarship Watcher · 4 new fully funded · 2 closing soon · 9 Nov
    - Closing this week
    - New today
    - Still open from the last 10 days
-7. **Emails you** via SMTP or Resend. If email is not configured yet, it writes the digest to `data/digests/` and prints it.
+7. **Emails you** via SMTP or Resend, including on days with no matches. If email is not configured yet, it writes the digest to `data/digests/` and prints it.
 8. **Runs daily** through macOS `launchd` or Linux `cron`.
 9. **Shows everything in a local dashboard** at `http://127.0.0.1:8787`: live source health, email status, next-run countdown, deadline countdowns and filters.
 
@@ -46,25 +46,28 @@ Rejected or held back:
 
 The classifier runs on keywords and a few negation rules. It is intentionally conservative: **the absence of a fee mention is treated as no fee**, which is why every email ends with a verification checklist. Always confirm on the official host domain before applying. This is a discovery tool, not a guarantee.
 
-## Under-18 conference filter
+## Under-18 filter
 
-The daily email can be limited to conferences that a minor can actually attend. Set this in `.env`:
+The daily email can be limited to opportunities a minor can actually attend. The recommended configuration is:
 
 ```bash
-ONLY_CONFERENCES=true
-UNDER18_ONLY=true
-UNDER18_STRICT=false
+ONLY_CONFERENCES=false   # all opportunity types
+UNDER18_ONLY=true        # drop anything explicitly restricted to 18+
+UNDER18_STRICT=true      # only explicit under-18 eligibility
+SEND_EMPTY=true          # still send the daily email when nothing matches
 ```
 
 What the age detector understands:
 
 - **Under-18 eligible** — an age range that includes 17 or below (`15–17`, `16–24`), `under 18`, `teenagers`, `minors`, or `high school students`.
 - **18+ only** — `18+`, `18 and older`, `at least 18`, `aged 18–40`, `24–45`.
-- **Age not stated** — no explicit policy.
+- **Age not stated** — no age policy, or only a statement like `no age limit`.
 
-With `UNDER18_STRICT=false`, the email excludes known 18+ events but keeps events with no stated age limit, and marks each one `Age: Age not stated — confirm under-18 eligibility`. Set `UNDER18_STRICT=true` to receive only events that explicitly say under-18s are eligible.
+With `UNDER18_STRICT=true`, only the first group is emailed. With `UNDER18_STRICT=false`, opportunities with no stated age limit are also included and marked `Age: Age not stated — confirm under-18 eligibility`. Set `ONLY_CONFERENCES=true` if you want to narrow the list to conferences, summits and forums only.
 
 The dashboard has the same filter: **Audience → Under-18 eligible / Under-18 conferences**. It always shows the full store; the filter only changes what you are looking at. The email filter never deletes data.
+
+If nothing matches, `SEND_EMPTY=true` still sends a short email confirming the watcher ran.
 
 ## Quick start
 
@@ -453,7 +456,7 @@ The Instagram browser profile is at `data/instagram/profile/`. It contains sessi
 
 **Too many items.** Tighten `MAX_AGE_DAYS`, or disable Telegram/Instagram sources in `config/sources.json`. The digest only shows 20 new items per day.
 
-**The digest is empty.** That is a valid result. With `SEND_EMPTY=true` you still get a short email and the permanent watchlist, which confirms the watcher is alive.
+**The digest is empty.** That is a valid result, especially with `UNDER18_STRICT=true`. With `SEND_EMPTY=true` you still get a short email confirming the watcher ran.
 
 ## Privacy
 

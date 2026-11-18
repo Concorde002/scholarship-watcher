@@ -210,7 +210,7 @@ function renderStatus(data) {
   $('hero-sub').textContent =
     `${counts.open} open opportunit${counts.open === 1 ? 'y' : 'ies'} · ` +
     `${counts.urgent} closing today or tomorrow · ` +
-    `${counts.under18Conferences ?? 0} under-18 conferences · ` +
+    `${counts.under18 ?? 0} under-18 opportunities · ` +
     `${counts.sourcesLive} sources live · updated ${timeAgo(data.storeUpdatedAt || data.generatedAt)}`;
 }
 

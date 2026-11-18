@@ -24,8 +24,10 @@ const UNDER_18_TERMS = [
   /\b(?:18|eighteen)\s*(?:and|or)\s*(?:under|younger)\b/i,
   /\bminors?\b/i,
   /\bteenagers?\b/i,
-  /\bhigh[\s-]?school(?:ers?|\s+students?|\s+pupils?)?\b/i,
-  /\bsecondary[\s-]?school\s+(?:students?|pupils?)\b/i,
+  /\bhigh[\s-]?schoolers?\b/i,
+  /\bhigh[\s-]?school\s+(?:students?|pupils?|delegates?|participants?|applicants?)\b/i,
+  /\b(?:students?|pupils?|delegates?|participants?)\s+(?:at|in|from)\s+(?:a\s+)?high[\s-]?school\b/i,
+  /\bsecondary[\s-]?school\s+(?:students?|pupils?|delegates?|participants?)\b/i,
   /(?:^|\s)(?:primary|middle)\s+school\s+students?\b/i,
 ];
 
@@ -134,8 +136,8 @@ export function extractAgePolicy(text) {
 
   if (NO_AGE_LIMIT.test(clean)) {
     return {
-      under18: 'yes',
-      label: 'All ages',
+      under18: 'unknown',
+      label: 'No age limit',
       minAge: null,
       maxAge: null,
       evidence: NO_AGE_LIMIT.exec(clean)?.[0] ?? 'no age limit',
