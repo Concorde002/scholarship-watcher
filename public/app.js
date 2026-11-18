@@ -237,7 +237,7 @@ function filteredItems() {
     if (state.urgency === 'month' && !(item.daysLeft !== null && item.daysLeft <= 30)) return false;
     if (state.urgency === 'none' && item.daysLeft !== null) return false;
     if (state.audience === 'under18' && item.under18 !== 'yes') return false;
-    if (state.audience === 'under18-conference' && (!item.conference || item.under18 === 'no')) return false;
+    if (state.audience === 'under18-conference' && (!item.conference || item.under18 !== 'yes')) return false;
     if (!query) return true;
     return `${item.title} ${item.sourceName} ${item.location} ${item.category} ${item.eventDate ?? ''} ${item.ageLine ?? ''} ${item.reason}`
       .toLowerCase()

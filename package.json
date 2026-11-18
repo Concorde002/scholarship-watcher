@@ -1,6 +1,6 @@
 {
   "name": "scholarship-watcher",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Local daily watcher for fully funded scholarships, fellowships and conferences. Filters out fees and self-funded programs, then emails you a deadline-aware digest. Includes RSS, Telegram and authenticated Instagram sources.",
   "type": "module",
   "license": "MIT",

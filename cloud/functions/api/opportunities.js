@@ -58,7 +58,7 @@ export async function onRequestGet(context) {
     later: items.filter((item) => item.daysLeft !== null && item.daysLeft > 30).length,
     noDeadline: items.filter((item) => item.daysLeft === null).length,
     under18: items.filter((item) => item.under18 === 'yes').length,
-    under18Conferences: items.filter((item) => item.conference && item.under18 !== 'no').length,
+    under18Conferences: items.filter((item) => item.conference && item.under18 === 'yes').length,
   };
 
   const watch = await context.env.DB.prepare(

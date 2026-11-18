@@ -126,7 +126,7 @@ function buildOverview() {
     noDeadline: items.filter((item) => item.daysLeft === null).length,
     conferences: items.filter((item) => item.conference).length,
     under18: items.filter((item) => item.under18 === 'yes').length,
-    under18Conferences: items.filter((item) => item.conference && item.under18 !== 'no').length,
+    under18Conferences: items.filter((item) => item.conference && item.under18 === 'yes').length,
     ageUnknown: items.filter((item) => item.under18 === 'unknown').length,
     expired: allItems.length - items.length,
     sourcesLive: sources.filter((source) => source.status === 'live').length,
