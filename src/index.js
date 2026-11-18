@@ -281,10 +281,17 @@ async function commandRun(options) {
   const storeCopy = structuredClone(store);
   updateStore(storeCopy, acceptedToday, now);
 
+  const audienceFilters = {
+    under18: config.under18Only,
+    conferencesOnly: config.onlyConferences,
+    strict: config.under18Strict,
+  };
+
   const digest = prepareDigest({
     now,
     accepted: Object.values(storeCopy.items),
     newIds: new Set(acceptedToday.map((item) => item.id)),
+    filters: audienceFilters,
     stats: {
       sourceCount: sources.length,
       sourceErrors: errors.length,
@@ -294,6 +301,12 @@ async function commandRun(options) {
       acceptedToday: acceptedToday.length,
     },
   });
+
+  if (digest.audience.active) {
+    log(
+      `Audience filter: ${digest.audience.label} · ${digest.counts.filteredOut} of ${digest.counts.available} stored item(s) hidden.`,
+    );
+  }
 
   const scheduleTime = process.env.SCHEDULE_TIME || '08:00';
   const writeRunStatus = () => {

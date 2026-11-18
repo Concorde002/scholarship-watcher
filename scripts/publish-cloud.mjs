@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { loadStore } from '../src/store.js';
+import { ageProfile, isConference } from '../src/eligibility.js';
 
 const base = (process.env.CLOUD_URL || '').replace(/\/+$/, '');
 const secret = process.env.CLOUD_ADMIN_SECRET || '';
@@ -10,21 +11,27 @@ if (!base || !secret) {
 }
 
 const store = loadStore();
-const items = Object.values(store.items).map((item) => ({
-  id: item.id,
-  title: item.title,
-  url: item.url,
-  applyUrl: item.applyUrl ?? null,
-  sourceName: item.sourceName,
-  sourceType: item.sourceType ?? '',
-  deadline: item.deadline ?? null,
-  eventDate: item.eventDate ?? null,
-  location: item.location ?? '',
-  category: item.category ?? '',
-  reason: item.reason ?? '',
-  verifiedBy: item.verifiedBy ?? 'heuristic',
-  firstSeen: item.firstSeen ?? null,
-}));
+const items = Object.values(store.items).map((item) => {
+  const age = ageProfile(item);
+  return {
+    id: item.id,
+    title: item.title,
+    url: item.url,
+    applyUrl: item.applyUrl ?? null,
+    sourceName: item.sourceName,
+    sourceType: item.sourceType ?? '',
+    deadline: item.deadline ?? null,
+    eventDate: item.eventDate ?? null,
+    location: item.location ?? '',
+    category: item.category ?? '',
+    reason: item.reason ?? '',
+    verifiedBy: item.verifiedBy ?? 'heuristic',
+    firstSeen: item.firstSeen ?? null,
+    under18: age.under18,
+    ageLabel: age.label,
+    conference: isConference(item),
+  };
+});
 
 console.log(`Publishing ${items.length} opportunities to ${base}…`);
 

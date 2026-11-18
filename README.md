@@ -46,6 +46,26 @@ Rejected or held back:
 
 The classifier runs on keywords and a few negation rules. It is intentionally conservative: **the absence of a fee mention is treated as no fee**, which is why every email ends with a verification checklist. Always confirm on the official host domain before applying. This is a discovery tool, not a guarantee.
 
+## Under-18 conference filter
+
+The daily email can be limited to conferences that a minor can actually attend. Set this in `.env`:
+
+```bash
+ONLY_CONFERENCES=true
+UNDER18_ONLY=true
+UNDER18_STRICT=false
+```
+
+What the age detector understands:
+
+- **Under-18 eligible** — an age range that includes 17 or below (`15–17`, `16–24`), `under 18`, `teenagers`, `minors`, or `high school students`.
+- **18+ only** — `18+`, `18 and older`, `at least 18`, `aged 18–40`, `24–45`.
+- **Age not stated** — no explicit policy.
+
+With `UNDER18_STRICT=false`, the email excludes known 18+ events but keeps events with no stated age limit, and marks each one `Age: Age not stated — confirm under-18 eligibility`. Set `UNDER18_STRICT=true` to receive only events that explicitly say under-18s are eligible.
+
+The dashboard has the same filter: **Audience → Under-18 eligible / Under-18 conferences**. It always shows the full store; the filter only changes what you are looking at. The email filter never deletes data.
+
 ## Quick start
 
 Requirements: Node.js **20+** and `git`. Optional: **Google Chrome** for the Instagram sources, and the `opencode` CLI for AI-assisted verification.
@@ -127,7 +147,7 @@ What is on it:
 
 - every open opportunity with a live deadline countdown
 - event/program dates (`When:`), separate from the application deadline
-- search, source, deadline and sort filters
+- search, source, audience (under-18), deadline and sort filters
 - watcher health: last run, duration, next-run countdown, email delivery, Instagram session
 - every source shown as **live**, **failed**, **skipped** or **disabled**, with item counts, timing and the actual error
 - a link to the latest digest
@@ -343,6 +363,9 @@ Set `"enabled": false` to keep a source documented without fetching it. `npm run
 | `SAVE_WITHOUT_EMAIL` | `false` | Advance state when no email is configured (local-only mode) |
 | `MAX_AGE_DAYS` | `60` | Ignore feed items older than this |
 | `ENRICH_LIMIT` | `30` | How many article pages to read per run |
+| `ONLY_CONFERENCES` | `false` | Email only conferences, summits and forums |
+| `UNDER18_ONLY` | `false` | Drop items explicitly restricted to 18+ |
+| `UNDER18_STRICT` | `false` | With the above, also drop items with no stated age limit |
 | `USE_LLM` | `false` | Optional opencode AI verification |
 | `OPENCODE_MODEL` | CLI default | e.g. `provider/model` |
 | `OPENCODE_BIN` | `opencode` | Path to the CLI |
@@ -372,7 +395,7 @@ node src/index.js run --llm --verbose
 How it behaves:
 
 - Sends at most `LLM_LIMIT` candidates in batches of six.
-- The prompt requires a JSON verdict: fully funded (boolean), application fee (boolean), deadline, location, category, confidence, reason.
+- The prompt requires a JSON verdict: fully funded (boolean), application fee (boolean), deadline, event dates, location, category, under-18 eligibility, age range, confidence, reason.
 - A valid verdict overrides the keyword verdict.
 - If the CLI is missing, unauthenticated, times out, or returns junk, the watcher logs a warning and keeps the keyword results. A model failure never breaks the daily email.
 - This uses your model credits and can add a few minutes per run.

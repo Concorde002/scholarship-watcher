@@ -1,4 +1,5 @@
 import { dateKey, daysUntil, escapeHtml, formatDate } from './util.js';
+import { ageProfile, describeAge, matchesAudience } from './eligibility.js';
 
 const WATCHLIST = [
   ['One Young World Summit scholarships', 'https://www.oneyoungworld.com/scholarships'],
@@ -38,25 +39,67 @@ function decorate(item, now) {
   if (item.applyUrl) actionLabel = `Apply on ${actionHost} →`;
   else if (item.sourceType === 'instagram') actionLabel = 'Open the post and use its link in bio →';
   else actionLabel = `Apply on ${actionHost} →`;
+  const age = ageProfile(item);
 
   return {
     ...item,
     host: hostOf(item.url),
     actionUrl,
     actionLabel,
+    under18: age.under18,
+    ageLabel: age.label,
+    ageLine: describeAge(age),
     badge: deadlineBadge(item, now),
     meta: [item.sourceName, item.location, item.category].filter(Boolean).join(' · '),
   };
+}
+
+function audienceFor(filters) {
+  const under18 = Boolean(filters.under18);
+  const conferencesOnly = Boolean(filters.conferencesOnly);
+  if (!under18 && !conferencesOnly) return { active: false, label: null, note: null };
+  if (under18 && conferencesOnly) {
+    return {
+      active: true,
+      label: 'Under-18 conferences',
+      note: filters.strict
+        ? 'Only items that explicitly state under-18 eligibility.'
+        : 'Conferences that are not marked 18+. Items with no stated age limit are included with a note.',
+    };
+  }
+  if (under18) {
+    return {
+      active: true,
+      label: 'Under-18 eligible',
+      note: filters.strict
+        ? 'Only items that explicitly state under-18 eligibility.'
+        : 'Items that are not marked 18+. Items with no stated age limit are included with a note.',
+    };
+  }
+  return { active: true, label: 'Conferences only', note: 'Only conferences, summits and forums.' };
 }
 
 /**
  * Build the digest model: apply-today, closing-this-week, new, then recent.
  * Each opportunity appears once; the most urgent section wins.
  */
-export function prepareDigest({ now = new Date(), accepted = [], newIds = new Set(), stats = {} }) {
+export function prepareDigest({
+  now = new Date(),
+  accepted = [],
+  newIds = new Set(),
+  stats = {},
+  filters = {},
+}) {
   const byId = new Map();
   for (const item of accepted) if (item?.id) byId.set(item.id, item);
-  const decorated = [...byId.values()].map((item) => decorate(item, now));
+  const available = [...byId.values()];
+  const open = available.filter(
+    (item) => !item.deadline || (daysUntil(item.deadline, now) ?? 0) >= 0,
+  );
+  const included = open.filter((item) => matchesAudience(item, filters));
+  const includedIds = new Set(included.map((item) => item.id));
+  const audience = audienceFor(filters);
+  const decorated = included.map((item) => decorate(item, now));
 
   const urgent = [];
   const closing = [];
@@ -136,7 +179,7 @@ export function prepareDigest({ now = new Date(), accepted = [], newIds = new Se
     });
   }
 
-  const newCount = [...newIds].filter((id) => byId.has(id)).length;
+  const newCount = [...newIds].filter((id) => includedIds.has(id)).length;
   const closingCount = closing.length + urgent.length;
 
   return {
@@ -148,12 +191,16 @@ export function prepareDigest({ now = new Date(), accepted = [], newIds = new Se
       year: 'numeric',
     }),
     shortDate: now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    audience,
     sections,
     counts: {
       new: newCount,
       closing: closingCount,
       urgent: urgent.length,
-      total: byId.size,
+      total: included.length,
+      available: open.length,
+      filteredOut: open.length - included.length,
+      expired: available.length - open.length,
       ...stats,
     },
     empty: sections.length === 0,
@@ -162,6 +209,15 @@ export function prepareDigest({ now = new Date(), accepted = [], newIds = new Se
 
 export function subjectFor(digest) {
   const { new: newCount, closing } = digest.counts;
+  if (digest.audience?.active) {
+    if (digest.empty) {
+      return `Scholarship Watcher · no ${digest.audience.label.toLowerCase()} today · ${digest.shortDate}`;
+    }
+    if (newCount > 0) {
+      return `Scholarship Watcher · ${digest.audience.label} · ${newCount} new · ${closing} closing soon · ${digest.shortDate}`;
+    }
+    return `Scholarship Watcher · ${digest.audience.label} · ${closing} closing soon · ${digest.shortDate}`;
+  }
   if (digest.empty) return `Scholarship Watcher · no new matches · ${digest.shortDate}`;
   if (newCount > 0) {
     return `Scholarship Watcher · ${newCount} new fully funded · ${closing} closing soon · ${digest.shortDate}`;
@@ -173,6 +229,7 @@ function textItem(item) {
   const lines = [`• ${item.title}`];
   lines.push(`  ${item.meta || item.host}`);
   lines.push(`  ${item.badge.text}`);
+  lines.push(`  Age: ${item.ageLine}`);
   if (item.reason) lines.push(`  Why: ${item.reason}`);
   if (item.eventDate) lines.push(`  When: ${item.eventDate}`);
   lines.push(`  ${item.url}`);
@@ -184,18 +241,30 @@ export function renderText(digest) {
   const out = [];
   out.push(`SCHOLARSHIP WATCHER — ${digest.dateLabel}`);
   out.push('Fully funded only. No application or registration fees.');
+  if (digest.audience?.active) {
+    out.push(`Audience filter: ${digest.audience.label}. ${digest.audience.note}`);
+  }
   out.push('');
 
   const { counts } = digest;
   out.push(
-    `${counts.sourceCount ?? 0} sources checked · ${counts.scanned ?? 0} posts scanned · ${counts.rejected ?? 0} rejected (fees, partial or unfunded)${counts.review ? ` · ${counts.review} need manual review` : ''}${counts.sourceErrors ? ` · ${counts.sourceErrors} source(s) failed` : ''}`,
+    `${counts.sourceCount ?? 0} sources checked · ${counts.scanned ?? 0} posts scanned · ${counts.rejected ?? 0} rejected (fees, partial or unfunded)${counts.review ? ` · ${counts.review} need manual review` : ''}${counts.sourceErrors ? ` · ${counts.sourceErrors} source(s) failed` : ''}${digest.audience?.active ? ` · ${counts.filteredOut ?? 0} hidden by the audience filter` : ''}`,
   );
   out.push('');
 
   if (digest.empty) {
-    out.push('No new fully funded opportunities today. Permanent watchlist:');
-    out.push('');
-    for (const [name, url] of WATCHLIST) out.push(`• ${name}\n  ${url}`);
+    if (digest.audience?.active) {
+      out.push(`No ${digest.audience.label.toLowerCase()} passed the filter today.`);
+      out.push('');
+      out.push(digest.audience.note);
+      if (!digest.audience.note.includes('no stated age limit')) {
+        out.push('If you want more options, set UNDER18_STRICT=false to include conferences with no stated age limit.');
+      }
+    } else {
+      out.push('No new fully funded opportunities today. Permanent watchlist:');
+      out.push('');
+      for (const [name, url] of WATCHLIST) out.push(`• ${name}\n  ${url}`);
+    }
   } else {
     for (const section of digest.sections) {
       out.push(`${section.title.toUpperCase()}`);
@@ -234,6 +303,7 @@ function renderItemHtml(item) {
           <span style="display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;color:${tone.fg};background:${tone.bg};border:1px solid ${tone.border};border-radius:999px;padding:4px 10px;">${escapeHtml(item.badge.text)}</span>
         </div>
         ${item.eventDate ? `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#15211c;margin-top:10px;"><strong>When:</strong> ${escapeHtml(item.eventDate)}</div>` : ''}
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#15211c;margin-top:6px;"><strong>Age:</strong> ${escapeHtml(item.ageLine)}</div>
         ${item.reason ? `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#5f5b51;margin-top:10px;">${escapeHtml(item.reason)}</div>` : ''}
         <div style="margin-top:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;">
           <a href="${escapeHtml(item.actionUrl)}" style="color:#0f6b4f;font-weight:600;text-decoration:none;">${escapeHtml(item.actionLabel)}</a>
@@ -264,17 +334,25 @@ export function renderHtml(digest) {
   <tr>
     <td style="padding:26px 28px 10px;">
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3f3b33;">
-        No new fully funded opportunities passed the filter today. Here is the permanent watchlist of flagship programs worth checking directly:
+        ${
+          digest.audience?.active
+            ? `No ${escapeHtml(digest.audience.label.toLowerCase())} passed the filter today. ${escapeHtml(digest.audience.note)}`
+            : 'No new fully funded opportunities passed the filter today. Here is the permanent watchlist of flagship programs worth checking directly:'
+        }
       </div>
     </td>
   </tr>
-  <tr>
+  ${
+    digest.audience?.active
+      ? ''
+      : `<tr>
     <td style="padding:6px 28px 10px;">
       <ul style="margin:0;padding-left:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.9;color:#15211c;">
         ${WATCHLIST.map(([name, url]) => `<li><a href="${escapeHtml(url)}" style="color:#0f6b4f;text-decoration:none;">${escapeHtml(name)}</a></li>`).join('')}
       </ul>
     </td>
   </tr>`
+  }`
     : '';
 
   return `<!doctype html>
@@ -292,8 +370,8 @@ export function renderHtml(digest) {
         <tr>
           <td style="background:#12211b;padding:28px;">
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8fd3b6;font-weight:700;">Scholarship Watcher</div>
-            <div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2;color:#ffffff;margin-top:10px;">Fully funded. Zero fee.</div>
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#b9c7c0;margin-top:8px;">${escapeHtml(digest.dateLabel)}</div>
+            <div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2;color:#ffffff;margin-top:10px;">${digest.audience?.active ? 'Fully funded. Under-18.' : 'Fully funded. Zero fee.'}</div>
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#b9c7c0;margin-top:8px;">${escapeHtml(digest.dateLabel)}${digest.audience?.active ? ` · ${escapeHtml(digest.audience.label)}` : ''}</div>
           </td>
         </tr>
         <tr>
@@ -304,7 +382,7 @@ export function renderHtml(digest) {
                   <strong style="color:#15211c;font-size:15px;">${counts.new ?? 0}</strong> new &nbsp;·&nbsp;
                   <strong style="color:#15211c;font-size:15px;">${counts.closing ?? 0}</strong> closing soon &nbsp;·&nbsp;
                   <strong style="color:#15211c;font-size:15px;">${counts.sourceCount ?? 0}</strong> sources checked
-                  <br>${counts.scanned ?? 0} posts scanned · ${counts.rejected ?? 0} rejected for fees, partial funding or no funding${counts.review ? ` · ${counts.review} need review` : ''}${counts.sourceErrors ? ` · ${counts.sourceErrors} source(s) failed` : ''}
+                  <br>${counts.scanned ?? 0} posts scanned · ${counts.rejected ?? 0} rejected for fees, partial funding or no funding${counts.review ? ` · ${counts.review} need review` : ''}${counts.sourceErrors ? ` · ${counts.sourceErrors} source(s) failed` : ''}${digest.audience?.active ? ` · ${counts.filteredOut ?? 0} hidden by the audience filter` : ''}
                 </td>
               </tr>
             </table>

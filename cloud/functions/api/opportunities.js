@@ -9,12 +9,20 @@ export async function onRequestGet(context) {
   const allowed = await rateLimit(context.env, `opps:${auth.user.id}`, 120, 60);
   if (!allowed) return json({ error: 'Slow down a little. Try again in a minute.' }, 429);
 
-  const { results } = await context.env.DB.prepare(
-    `SELECT id, title, url, apply_url, source_name, source_type, deadline, event_date,
-            location, category, reason, verified_by, first_seen
-     FROM opportunities
-     ORDER BY CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline ASC, title ASC`,
-  ).all();
+  const baseColumns = `id, title, url, apply_url, source_name, source_type, deadline, event_date,
+            location, category, reason, verified_by, first_seen`;
+  const order = 'ORDER BY CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline ASC, title ASC';
+  let results;
+  try {
+    ({ results } = await context.env.DB.prepare(
+      `SELECT ${baseColumns}, under18, age_label, conference FROM opportunities ${order}`,
+    ).all());
+  } catch {
+    // Audience columns are optional until migration 0002 is applied.
+    ({ results } = await context.env.DB.prepare(
+      `SELECT ${baseColumns} FROM opportunities ${order}`,
+    ).all());
+  }
 
   const items = (results ?? [])
     .map((row) => {
@@ -34,6 +42,9 @@ export async function onRequestGet(context) {
         reason: row.reason,
         verifiedBy: row.verified_by,
         firstSeen: row.first_seen,
+        under18: ['yes', 'no', 'unknown'].includes(row.under18) ? row.under18 : 'unknown',
+        ageLabel: row.age_label || null,
+        conference: row.conference === 1,
         expired: days !== null && days < -1,
       };
     })
@@ -46,6 +57,7 @@ export async function onRequestGet(context) {
     month: items.filter((item) => item.daysLeft !== null && item.daysLeft >= 8 && item.daysLeft <= 30).length,
     later: items.filter((item) => item.daysLeft !== null && item.daysLeft > 30).length,
     noDeadline: items.filter((item) => item.daysLeft === null).length,
+    under18Conferences: items.filter((item) => item.conference && item.under18 !== 'no').length,
   };
 
   const watch = await context.env.DB.prepare(

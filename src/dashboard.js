@@ -9,6 +9,7 @@ import { loadStatus } from './status.js';
 import { nextRunAt, scheduleStatus } from './schedule.js';
 import { describeMailConfig } from './mailer.js';
 import { hasInstagramSession, instagramSessionInfo } from './instagram.js';
+import { ageProfile, describeAge, isConference } from './eligibility.js';
 import { dateKey, daysUntil, formatDate } from './util.js';
 
 const PUBLIC_DIR = join(ROOT, 'public');
@@ -80,6 +81,7 @@ function buildOverview() {
 
   const allItems = Object.values(store.items).map((item) => {
     const daysLeft = item.deadline ? daysUntil(item.deadline, now) : null;
+    const age = ageProfile(item);
     return {
       id: item.id,
       title: item.title,
@@ -89,6 +91,10 @@ function buildOverview() {
       sourceType: item.sourceType || '',
       location: item.location || '',
       category: item.category || '',
+      conference: isConference(item),
+      under18: age.under18,
+      ageLabel: age.label || null,
+      ageLine: describeAge(age),
       deadline: item.deadline || null,
       daysLeft,
       deadlineLabel: item.deadline ? formatDate(item.deadline) : null,
@@ -118,6 +124,10 @@ function buildOverview() {
     month: items.filter((item) => item.daysLeft !== null && item.daysLeft >= 8 && item.daysLeft <= 30).length,
     later: items.filter((item) => item.daysLeft !== null && item.daysLeft > 30).length,
     noDeadline: items.filter((item) => item.daysLeft === null).length,
+    conferences: items.filter((item) => item.conference).length,
+    under18: items.filter((item) => item.under18 === 'yes').length,
+    under18Conferences: items.filter((item) => item.conference && item.under18 !== 'no').length,
+    ageUnknown: items.filter((item) => item.under18 === 'unknown').length,
     expired: allItems.length - items.length,
     sourcesLive: sources.filter((source) => source.status === 'live').length,
     sourcesFailed: sources.filter((source) => source.status === 'failed').length,

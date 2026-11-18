@@ -22,6 +22,9 @@ function cleanItem(item, importedAt) {
     verified_by: truncate(item.verifiedBy, 40),
     first_seen: truncate(item.firstSeen, 30),
     imported_at: importedAt,
+    under18: ['yes', 'no', 'unknown'].includes(item.under18) ? item.under18 : 'unknown',
+    age_label: truncate(item.ageLabel, 40),
+    conference: item.conference === true ? 1 : 0,
   };
 }
 
@@ -39,32 +42,43 @@ export async function onRequestPost(context) {
   const importedAt = new Date().toISOString();
   const items = body.items.map((item) => cleanItem(item, importedAt)).filter(Boolean);
 
+  // Allow the frontend/import to keep working while the optional audience
+  // migration has not been applied yet (e.g. an offline deploy).
+  let hasAudienceColumns = false;
+  try {
+    const info = await context.env.DB.prepare('PRAGMA table_info(opportunities)').all();
+    hasAudienceColumns = (info.results ?? []).some((column) => column.name === 'under18');
+  } catch {
+    hasAudienceColumns = false;
+  }
+
+  const fields = [
+    'id',
+    'title',
+    'url',
+    'apply_url',
+    'source_name',
+    'source_type',
+    'deadline',
+    'event_date',
+    'location',
+    'category',
+    'reason',
+    'verified_by',
+    'first_seen',
+    'imported_at',
+  ];
+  if (hasAudienceColumns) fields.push('under18', 'age_label', 'conference');
+  const placeholders = fields.map(() => '?').join(', ');
+
   await context.env.DB.prepare('DELETE FROM opportunities').run();
 
   for (let offset = 0; offset < items.length; offset += 40) {
     const chunk = items.slice(offset, offset + 40);
     const statements = chunk.map((item) =>
       context.env.DB.prepare(
-        `INSERT OR REPLACE INTO opportunities
-         (id, title, url, apply_url, source_name, source_type, deadline, event_date,
-          location, category, reason, verified_by, first_seen, imported_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).bind(
-        item.id,
-        item.title,
-        item.url,
-        item.apply_url,
-        item.source_name,
-        item.source_type,
-        item.deadline,
-        item.event_date,
-        item.location,
-        item.category,
-        item.reason,
-        item.verified_by,
-        item.first_seen,
-        item.imported_at,
-      ),
+        `INSERT OR REPLACE INTO opportunities (${fields.join(', ')}) VALUES (${placeholders})`,
+      ).bind(...fields.map((field) => item[field])),
     );
 
     if (statements.length) await context.env.DB.batch(statements);

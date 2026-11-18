@@ -61,6 +61,8 @@ export function updateStore(store, accepted, now = new Date()) {
       deadline: item.deadline ?? null,
       deadlineLabel: item.deadlineLabel ?? null,
       eventDate: item.eventDate ?? existing?.eventDate ?? null,
+      under18: item.under18 ?? existing?.under18 ?? 'unknown',
+      ageLabel: item.ageLabel ?? existing?.ageLabel ?? null,
       reason: item.reason,
       confidence: item.confidence,
       verifiedBy: item.verifiedBy ?? existing?.verifiedBy ?? 'heuristic',
@@ -99,8 +101,11 @@ export function dedupeStore(store) {
 
     winner.firstSeen = [winner.firstSeen, loser.firstSeen].filter(Boolean).sort()[0] ?? winner.firstSeen;
     winner.lastSeen = [winner.lastSeen, loser.lastSeen].filter(Boolean).sort().pop() ?? winner.lastSeen;
-    for (const field of ['eventDate', 'location', 'category', 'applyUrl', 'sourceType']) {
+    for (const field of ['eventDate', 'location', 'category', 'applyUrl', 'sourceType', 'ageLabel']) {
       if (!winner[field] && loser[field]) winner[field] = loser[field];
+    }
+    if (winner.under18 === 'unknown' && loser.under18 && loser.under18 !== 'unknown') {
+      winner.under18 = loser.under18;
     }
     byFingerprint.set(key, winner);
   }

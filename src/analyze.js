@@ -1,4 +1,5 @@
 import { collapseWhitespace, dateKey, daysUntil, truncate } from './util.js';
+import { extractAgePolicy } from './eligibility.js';
 
 const MONTHS = {
   january: 1, jan: 1,
@@ -419,6 +420,7 @@ export function classify(item, { now = new Date() } = {}) {
 
   const deadlineInfo = extractDeadline(text, now);
   const eventDate = extractEventDate(text);
+  const age = extractAgePolicy(text);
   const fee = analyzeFees(text);
   const fullHits = activeHits(FULLY_FUNDED, text, { checkAfter: false });
   const negativeHits = activeHits(NOT_FULLY_FUNDED, text, { checkAfter: false });
@@ -471,6 +473,8 @@ export function classify(item, { now = new Date() } = {}) {
     deadline: deadlineInfo.date,
     deadlineLabel: deadlineInfo.label,
     eventDate,
+    under18: age.under18,
+    ageLabel: age.label,
     daysLeft,
     reason,
     confidence:
@@ -498,6 +502,16 @@ export function mergeVerdict(item, verdict) {
     typeof verdict.eventDates === 'string' && verdict.eventDates.trim() && verdict.eventDates !== 'null'
       ? truncate(verdict.eventDates.trim(), 90)
       : item.eventDate;
+  const under18 =
+    verdict.under18 === true
+      ? 'yes'
+      : verdict.under18 === false
+        ? 'no'
+        : item.under18 ?? 'unknown';
+  const ageLabel =
+    typeof verdict.ageRange === 'string' && verdict.ageRange.trim() && verdict.ageRange !== 'null'
+      ? truncate(verdict.ageRange.trim(), 40)
+      : item.ageLabel ?? null;
 
   return {
     ...item,
@@ -506,6 +520,8 @@ export function mergeVerdict(item, verdict) {
     applicationFee: verdict.applicationFee ? 'charged' : 'none-stated',
     deadline,
     eventDate,
+    under18,
+    ageLabel,
     daysLeft: deadline ? daysUntil(deadline) : null,
     reason: truncate(verdict.reason || (accepted ? 'Verified fully funded, no fee.' : 'Rejected by AI review.'), 180),
     location: truncate(verdict.location || item.location || '', 80),

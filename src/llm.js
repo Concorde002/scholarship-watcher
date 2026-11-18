@@ -9,11 +9,13 @@ const SYSTEM_INSTRUCTIONS = `You are a strict scholarship eligibility filter. Do
 4. eventDates: when the conference, summit or programme actually takes place, as a short human string (e.g. "10–12 March 2027", "May 28 – June 11, 2027", "September 2027 – August 2028"), or null. Never put the application deadline here.
 5. location: host country or "Online" (max 6 words, or null).
 6. category: one of Scholarship, Fellowship, Conference, Summit, Exchange, Grant, Internship, Other.
-7. confidence: 0 to 1.
-8. reason: max 15 words, why accepted or rejected.
+7. under18: true ONLY if the text explicitly says under-18s are eligible (an age range that includes 17 or below, high-school/teenage students, or "minors"). false ONLY if it explicitly restricts applicants to 18+ / adults. Use null when no age policy is stated, and never guess.
+8. ageRange: the explicit age eligibility as a short string (e.g. "15–17", "18–40", "high-school students"), or null.
+9. confidence: 0 to 1.
+10. reason: max 15 words, why accepted or rejected.
 
 Return ONLY a JSON array. No markdown, no prose:
-[{"id":"...","fullyFunded":true,"applicationFee":false,"deadline":"2026-01-15","eventDates":"10–12 March 2027","location":"Germany","category":"Conference","confidence":0.9,"reason":"..."}]
+[{"id":"...","fullyFunded":true,"applicationFee":false,"deadline":"2026-01-15","eventDates":"10–12 March 2027","location":"Germany","category":"Conference","under18":null,"ageRange":null,"confidence":0.9,"reason":"..."}]
 
 Items:`;
 

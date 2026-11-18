@@ -5,6 +5,7 @@ const state = {
   query: '',
   source: 'all',
   urgency: 'all',
+  audience: 'all',
   sort: 'deadline',
   loading: false,
 };
@@ -209,6 +210,7 @@ function renderStatus(data) {
   $('hero-sub').textContent =
     `${counts.open} open opportunit${counts.open === 1 ? 'y' : 'ies'} · ` +
     `${counts.urgent} closing today or tomorrow · ` +
+    `${counts.under18Conferences ?? 0} under-18 conferences · ` +
     `${counts.sourcesLive} sources live · updated ${timeAgo(data.storeUpdatedAt || data.generatedAt)}`;
 }
 
@@ -234,8 +236,10 @@ function filteredItems() {
     if (state.urgency === 'week' && !(item.daysLeft !== null && item.daysLeft <= 7)) return false;
     if (state.urgency === 'month' && !(item.daysLeft !== null && item.daysLeft <= 30)) return false;
     if (state.urgency === 'none' && item.daysLeft !== null) return false;
+    if (state.audience === 'under18' && item.under18 !== 'yes') return false;
+    if (state.audience === 'under18-conference' && (!item.conference || item.under18 === 'no')) return false;
     if (!query) return true;
-    return `${item.title} ${item.sourceName} ${item.location} ${item.category} ${item.eventDate ?? ''} ${item.reason}`
+    return `${item.title} ${item.sourceName} ${item.location} ${item.category} ${item.eventDate ?? ''} ${item.ageLine ?? ''} ${item.reason}`
       .toLowerCase()
       .includes(query);
   });
@@ -284,6 +288,7 @@ function renderItems() {
           <h3><a href="${esc(safeUrl(item.url))}" target="_blank" rel="noopener noreferrer">${esc(item.title)}</a></h3>
           <p class="item-meta">${meta}</p>
           ${item.eventDate ? `<p class="item-when"><strong>When:</strong> ${esc(item.eventDate)}</p>` : ''}
+          ${item.ageLine ? `<p class="item-when"><strong>Age:</strong> ${esc(item.ageLine)}</p>` : ''}
           ${item.reason ? `<p class="item-reason">${esc(item.reason)}</p>` : ''}
         </div>
         <div class="item-side">
@@ -420,10 +425,12 @@ $('reset-filters').addEventListener('click', () => {
   state.query = '';
   state.source = 'all';
   state.urgency = 'all';
+  state.audience = 'all';
   state.sort = 'deadline';
   $('search').value = '';
   $('source-filter').value = 'all';
   $('urgency-filter').value = 'all';
+  $('audience-filter').value = 'all';
   $('sort-filter').value = 'deadline';
   renderItems();
 });
@@ -440,6 +447,11 @@ $('source-filter').addEventListener('change', (event) => {
 
 $('urgency-filter').addEventListener('change', (event) => {
   state.urgency = event.target.value;
+  renderItems();
+});
+
+$('audience-filter').addEventListener('change', (event) => {
+  state.audience = event.target.value;
   renderItems();
 });
 

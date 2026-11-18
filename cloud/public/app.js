@@ -8,6 +8,7 @@ const state = {
   query: '',
   source: 'all',
   urgency: 'all',
+  audience: 'all',
   sort: 'deadline',
   savedOnly: false,
   loading: false,
@@ -172,9 +173,11 @@ function filteredItems() {
     if (state.urgency === 'month' && !(item.daysLeft !== null && item.daysLeft >= 8 && item.daysLeft <= 30)) return false;
     if (state.urgency === 'later' && !(item.daysLeft !== null && item.daysLeft > 30)) return false;
     if (state.urgency === 'none' && item.daysLeft !== null) return false;
+    if (state.audience === 'under18' && item.under18 !== 'yes') return false;
+    if (state.audience === 'under18-conference' && (!item.conference || item.under18 === 'no')) return false;
     if (!state.query.trim()) return true;
     const query = state.query.trim().toLowerCase();
-    return `${item.title} ${item.sourceName} ${item.location} ${item.category} ${item.eventDate ?? ''} ${item.reason}`
+    return `${item.title} ${item.sourceName} ${item.location} ${item.category} ${item.eventDate ?? ''} ${item.ageLabel ?? ''} ${item.reason}`
       .toLowerCase()
       .includes(query);
   });
@@ -227,6 +230,7 @@ function renderItems() {
           <h3><a href="${esc(safeUrl(item.url))}" target="_blank" rel="noopener noreferrer">${esc(item.title)}</a></h3>
           <p class="item-meta">${meta}</p>
           ${item.eventDate ? `<p class="item-when"><strong>When:</strong> ${esc(item.eventDate)}</p>` : ''}
+          ${item.ageLabel || item.under18 === 'unknown' ? `<p class="item-when"><strong>Age:</strong> ${esc(item.ageLabel || 'Not stated — confirm under-18 eligibility')}${item.under18 === 'no' ? ' · adults only' : item.under18 === 'yes' ? ' · under-18 eligible' : ''}</p>` : ''}
           ${item.reason ? `<p class="item-reason">${esc(item.reason)}</p>` : ''}
         </div>
         <div class="item-side">
@@ -257,7 +261,7 @@ function renderHeader() {
   const saved = state.watchlist.size;
   $('saved-toggle').textContent = `Saved (${saved})`;
   $('saved-toggle').classList.toggle('saved-toggle-active', state.savedOnly);
-  $('hero-sub').textContent = `${counts.open ?? 0} open · ${counts.urgent ?? 0} closing today or tomorrow · ${saved} saved`;
+  $('hero-sub').textContent = `${counts.open ?? 0} open · ${counts.urgent ?? 0} closing today or tomorrow · ${counts.under18Conferences ?? 0} under-18 conferences · ${saved} saved`;
   $('last-sync').textContent = state.data?.updatedAt ? timeAgo(state.data.updatedAt) : '—';
   $('sync-note').textContent = state.data?.updatedAt
     ? `Published ${new Date(state.data.updatedAt).toLocaleString('en-GB')}`
@@ -380,11 +384,13 @@ $('reset-filters').addEventListener('click', () => {
   state.query = '';
   state.source = 'all';
   state.urgency = 'all';
+  state.audience = 'all';
   state.sort = 'deadline';
   state.savedOnly = false;
   $('search').value = '';
   $('source-filter').value = 'all';
   $('urgency-filter').value = 'all';
+  $('audience-filter').value = 'all';
   $('sort-filter').value = 'deadline';
   renderAll();
 });
@@ -401,6 +407,11 @@ $('source-filter').addEventListener('change', (event) => {
 
 $('urgency-filter').addEventListener('change', (event) => {
   state.urgency = event.target.value;
+  renderItems();
+});
+
+$('audience-filter').addEventListener('change', (event) => {
+  state.audience = event.target.value;
   renderItems();
 });
 
